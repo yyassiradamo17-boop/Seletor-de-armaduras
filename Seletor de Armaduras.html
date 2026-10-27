@@ -1,0 +1,1193 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Seletor de Armaduras</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: separadores por tipo de armadura; requisitos e pré-dimensionamento EC2 à esquerda; solução destacada, tabela de áreas e catálogos de malhas à direita */
+:root{
+  --bg:#eef0f1; --panel:#ffffff; --ink:#1d2327; --muted:#5d686f; --line:#d3d8db; --soft:#f5f6f7;
+  --oxide:#b0432a; --oxide-soft:#f6e3dd; --ok:#2f7a4a; --ok-soft:#e4f0e8; --warn:#a86a12; --bad:#a23a2e; --steel:#4f6472; --conc:#dde1e3;
+  --f-disp:"Barlow Condensed","Arial Narrow",sans-serif; --f-body:"IBM Plex Sans",system-ui,sans-serif; --f-num:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#15191b; --panel:#1d2225; --ink:#e3e7e9; --muted:#97a3aa; --line:#323a3f; --soft:#22292c;
+  --oxide:#e2775a; --oxide-soft:#3a2420; --ok:#5fb37e; --ok-soft:#1d3125; --warn:#d9a24a; --bad:#e07a6c; --steel:#93aab8; --conc:#2b3337; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15191b; --panel:#1d2225; --ink:#e3e7e9; --muted:#97a3aa; --line:#323a3f; --soft:#22292c;
+  --oxide:#e2775a; --oxide-soft:#3a2420; --ok:#5fb37e; --ok-soft:#1d3125; --warn:#d9a24a; --bad:#e07a6c; --steel:#93aab8; --conc:#2b3337; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 24px;border-bottom:2px solid var(--ink);padding-bottom:10px}
+h1{font-family:var(--f-disp);font-weight:700;font-size:clamp(28px,4vw,40px);letter-spacing:.01em;line-height:1;margin:0;text-transform:uppercase;text-wrap:balance}
+h1 span{color:var(--oxide)}
+h2{font-family:var(--f-disp);font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:20px;margin:0}
+.src{color:var(--muted);font-size:12.5px;max-width:560px;margin:0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px}
+/* separadores */
+.tabs{display:flex;flex-wrap:wrap;gap:0;border:1px solid var(--line);border-radius:6px;background:var(--panel);overflow:hidden}
+.tabs button{flex:1 1 150px;font:600 17px var(--f-disp);letter-spacing:.04em;text-transform:uppercase;background:none;border:none;border-right:1px solid var(--line);color:var(--muted);padding:10px 12px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:1px}
+.tabs button:last-child{border-right:none}
+.tabs button small{font:400 11.5px var(--f-body);text-transform:none;letter-spacing:0}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--panel)}
+.tabs button[aria-selected="true"] small{color:inherit;opacity:.75}
+/* importação */
+.import{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:0}
+@media (max-width:820px){.import{grid-template-columns:minmax(0,1fr)}}
+.drop{margin:12px;border:2px dashed var(--line);border-radius:6px;padding:16px;display:flex;gap:16px;align-items:center;cursor:pointer;background:var(--soft);transition:border-color .15s,background .15s;position:relative}
+.drop:hover,.drop.over{border-color:var(--oxide);background:var(--oxide-soft)}
+.drop:focus-within{outline:2px solid var(--oxide);outline-offset:2px}
+.drop svg{flex:none;width:44px;height:52px}
+.drop b{font-family:var(--f-disp);font-size:19px;text-transform:uppercase;letter-spacing:.03em;display:block;line-height:1.1}
+.drop small{color:var(--muted);font-size:12.5px;display:block;margin-top:3px}
+.drop input{position:absolute;width:1px;height:1px;opacity:0}
+.cats{padding:12px 14px 12px 0;display:flex;flex-direction:column;gap:7px;min-width:0}
+@media (max-width:820px){.cats{padding:0 12px 12px}}
+.cat{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:5px;padding:6px 10px;min-width:0}
+.cat input{width:auto;flex:none}
+.cat .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+.cat .meta{font:500 12px var(--f-num);color:var(--muted);white-space:nowrap}
+.cat.ref{border-style:dashed}
+.cat.off .nm{color:var(--muted);text-decoration:line-through}
+.prog{height:6px;border-radius:3px;background:var(--soft);border:1px solid var(--line);overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:var(--oxide);transition:width .2s}
+.msg{font-size:12.5px;color:var(--muted)} .msg.err{color:var(--bad)}
+.x{font:600 15px var(--f-body);background:none;border:none;color:var(--muted);cursor:pointer;padding:0 4px;line-height:1}
+.x:hover{color:var(--bad)}
+/* grelha principal */
+.grid{display:grid;grid-template-columns:320px minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+aside.panel{padding:16px;display:flex;flex-direction:column;gap:16px;position:sticky;top:12px}
+@media (max-width:900px){aside.panel{position:static}}
+.modeset{display:flex;flex-direction:column;gap:16px}
+.lbl{font-family:var(--f-disp);font-weight:600;text-transform:uppercase;letter-spacing:.08em;font-size:13px;color:var(--muted);margin:0 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 12.5px var(--f-num);border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:5px 9px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.chip:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,td[tabindex]:focus-visible{outline:2px solid var(--oxide);outline-offset:2px}
+.mini{font:500 12px var(--f-body);background:none;border:none;color:var(--oxide);cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
+.fields.three{grid-template-columns:1fr 1fr 1fr}
+.f{display:flex;flex-direction:column;gap:3px;min-width:0}
+.f.full{grid-column:1/-1}
+.f label{font-size:12px;color:var(--muted)}
+.f label b{font-family:var(--f-num);font-weight:500;color:var(--ink)}
+input,select{font:400 14px var(--f-num);color:var(--ink);background:var(--soft);border:1px solid var(--line);border-radius:4px;padding:6px 8px;width:100%;min-width:0}
+input::placeholder{color:var(--muted);opacity:.75}
+.calc{background:var(--soft);border:1px dashed var(--line);border-radius:5px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.calc .out{font:500 12.5px var(--f-num);color:var(--steel);display:flex;flex-direction:column;gap:2px}
+.calc .out .w{color:var(--warn)}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.hint{font-size:11.5px;color:var(--muted)}
+.toggle{display:flex;gap:6px;align-items:center;font-size:13px}
+.toggle input{width:auto}
+/* resultado */
+.result{padding:18px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:20px;border-top:4px solid var(--oxide)}
+@media (max-width:620px){.result{grid-template-columns:minmax(0,1fr)}}
+.sketch{background:var(--soft);border-radius:4px;aspect-ratio:1;max-width:100%;display:flex;align-items:center;justify-content:center}
+.sketch svg{width:100%;height:100%}
+.tag{display:inline-block;font:600 11px var(--f-disp);letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:3px;background:var(--oxide-soft);color:var(--oxide)}
+.tag.none{background:var(--soft);color:var(--bad)}
+.tag.sel{background:var(--soft);color:var(--steel)}
+.pname{font-family:var(--f-disp);font-weight:700;font-size:clamp(34px,5vw,48px);line-height:1;margin:8px 0 4px;overflow-wrap:anywhere}
+.psub{color:var(--muted);font-size:13px;margin:0}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-top:14px}
+.kv div{background:var(--panel);padding:7px 9px;display:flex;flex-direction:column}
+.kv span{font-size:11.5px;color:var(--muted)}
+.kv b{font:500 15px var(--f-num);font-variant-numeric:tabular-nums}
+.kv b.c{color:var(--steel)}
+.util{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.u{display:grid;grid-template-columns:minmax(120px,auto) minmax(0,1fr) 54px;gap:8px;align-items:center;font-size:12.5px}
+.u .bar{height:8px;background:var(--soft);border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+.u .bar i{display:block;height:100%;background:var(--ok)}
+.u .bar i.hi{background:var(--warn)} .u .bar i.over{background:var(--bad)}
+.u em{font:500 12px var(--f-num);font-style:normal;text-align:right}
+.u small{color:var(--muted);font-size:11px}
+.alts{margin-top:12px;font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.alts button{font:500 12.5px var(--f-num);border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:3px;padding:3px 7px;cursor:pointer}
+.fnote{font-size:12.5px;color:var(--steel);margin:8px 0 0;max-width:70ch}
+.fnote.bad{color:var(--bad)}
+/* tabela */
+.tblhead{padding:12px 14px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.tblhead .count{font-size:13px;color:var(--muted)} .tblhead .count b{color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);align-items:center}
+.legend i{display:inline-block;width:14px;height:11px;border:1px solid var(--line);vertical-align:-1px;margin-right:4px;border-radius:2px}
+.legend i.okc{background:var(--ok-soft)} .legend i.best{background:var(--oxide-soft);border:2px solid var(--oxide)}
+.legend i.nf{background-image:repeating-linear-gradient(135deg,transparent 0 3px,var(--line) 3px 4px)}
+.tw{overflow:auto;max-height:620px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:13px}
+#tbl th{position:sticky;top:0;background:var(--panel);z-index:2;text-align:right;font:600 12px var(--f-disp);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:2px solid var(--ink);white-space:nowrap;user-select:none}
+#tbl th small{font:400 10.5px var(--f-body);text-transform:none;letter-spacing:0;display:block;color:var(--muted)}
+#tbl td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:right;font-family:var(--f-num);white-space:nowrap}
+#tbl th:first-child,#tbl td:first-child{text-align:left;position:sticky;left:0;background:var(--panel);z-index:1}
+#tbl th:first-child{z-index:3}
+#tbl td:first-child{font-family:var(--f-body);font-weight:600}
+/* grelha de áreas (como nas tabelas de armadura) */
+#tbl.g th,#tbl.g td{text-align:center;padding:6px 8px}
+#tbl.g td{cursor:pointer;color:var(--muted)}
+#tbl.g td.okc{background:var(--ok-soft);color:var(--ink)}
+#tbl.g td.nf{opacity:.6;background-image:repeating-linear-gradient(135deg,transparent 0 4px,var(--line) 4px 5px)}
+#tbl.g td.best{background:var(--oxide-soft);box-shadow:inset 0 0 0 2px var(--oxide);color:var(--ink);font-weight:600;opacity:1}
+#tbl.g td.pick{box-shadow:inset 0 0 0 2px var(--steel);color:var(--ink);opacity:1}
+#tbl.g td sup{font-size:9px;color:var(--steel);margin-left:2px}
+#tbl.g tr.grp td{border-top:1.5px solid var(--ink)}
+#tbl.g td:hover{outline:1px solid var(--steel);outline-offset:-1px}
+/* lista de malhas */
+#tbl.l th{cursor:pointer}
+#tbl.l th.sorted{color:var(--oxide)}
+#tbl.l tr{cursor:pointer}
+#tbl.l tr.fail td{color:var(--muted);opacity:.55}
+#tbl.l tr.fail td.x{color:var(--bad);opacity:1}
+#tbl.l tr:hover td{background:var(--soft)}
+#tbl.l tr.best td{background:var(--oxide-soft)!important;color:var(--ink);opacity:1}
+#tbl.l tr.best td:first-child{box-shadow:inset 4px 0 0 var(--oxide)}
+#tbl.l tr.pick td{background:var(--oxide-soft)!important}
+#tbl.l tr.pick td:first-child{box-shadow:inset 4px 0 0 var(--steel)}
+#tbl.l td.c{color:var(--steel)}
+.surf{font:600 10px var(--f-disp);letter-spacing:.06em;text-transform:uppercase;color:var(--steel);margin-left:6px}
+.avoid{font:600 10px var(--f-disp);letter-spacing:.06em;text-transform:uppercase;color:var(--warn);border:1px solid currentColor;border-radius:3px;padding:0 4px;margin-left:4px}
+.expg{display:flex;flex-direction:column;gap:8px}
+.eg{display:grid;grid-template-columns:96px minmax(0,1fr);gap:6px;align-items:start}
+.eg>span{font-size:11.5px;color:var(--muted);padding-top:5px}
+details.calc summary{cursor:pointer;font:600 13px var(--f-disp);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+details.calc[open] summary{margin-bottom:4px}
+.btn{font:600 14px var(--f-disp);letter-spacing:.05em;text-transform:uppercase;background:var(--ink);color:var(--panel);border:none;border-radius:4px;padding:7px 12px;cursor:pointer}
+.btn:hover{background:var(--oxide)}
+.reqt{overflow-x:auto;margin-top:12px;border:1px solid var(--line)}
+.reqt table{font-size:12.5px}
+.reqt th{font:600 11.5px var(--f-disp);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--soft)}
+.reqt td{padding:5px 8px;border-bottom:1px solid var(--line);font-family:var(--f-num);vertical-align:top}
+.reqt td:nth-child(2){font-family:var(--f-body);min-width:150px}
+.reqt td small{display:block;font:400 10.5px var(--f-body);color:var(--muted);white-space:nowrap}
+.reqt tr.gov td{background:var(--oxide-soft)}
+.site{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:12px}
+.site div{border:1px solid var(--line);border-left:4px solid var(--oxide);border-radius:4px;padding:8px 10px;display:flex;flex-direction:column}
+.site div+div{border-left-color:var(--steel)}
+.site span{font-size:11.5px;color:var(--muted)}
+.site b{font:600 24px var(--f-disp);letter-spacing:.02em}
+.site em{font:500 12px var(--f-num);font-style:normal;color:var(--muted)}
+#tbl.g td.ro{cursor:default}
+.note{font-size:12px;color:var(--muted);max-width:90ch;margin:0}
+@media (prefers-reduced-motion:no-preference){.u .bar i{transition:width .25s ease}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <h1>Seletor de <span>armaduras</span></h1>
+  <p class="src">Varões para vigas e pilares, lajes e sapatas, estribos e malhas electrossoldadas. Indique a área necessária ou os esforços de cálculo (EC2) e a solução mais económica que cumpre fica destacada na tabela de áreas.</p>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Tipo de armadura">
+  <button role="tab" data-mode="viga" id="t_viga">Vigas e pilares<small>A<sub>s</sub> em cm² · nº de varões</small></button>
+  <button role="tab" data-mode="laje" id="t_laje">Lajes e sapatas<small>A<sub>s</sub> em cm²/m · afastamento</small></button>
+  <button role="tab" data-mode="est" id="t_est">Estribos<small>A<sub>sw</sub>/s em cm²/m · ramos</small></button>
+  <button role="tab" data-mode="malha" id="t_malha">Malhas electrossoldadas<small>A<sub>s</sub> nas duas direções · catálogo</small></button>
+  <button role="tab" data-mode="rec" id="t_rec">Recobrimentos<small>c<sub>nom</sub> · classes de exposição</small></button>
+  <button role="tab" data-mode="amar" id="t_amar">Amarração e emendas<small>l<sub>bd</sub> e l<sub>0</sub> em mm e em Ø</small></button>
+</nav>
+
+<section class="panel import" id="imp" aria-label="Catálogos de malhas" hidden>
+  <label class="drop" id="drop" for="file">
+    <svg viewBox="0 0 44 52" aria-hidden="true"><path d="M3 2h26l12 12v36H3z" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><path d="M29 2v12h12" fill="none" stroke="var(--ink)" stroke-width="2"/><g stroke="var(--oxide)" stroke-width="2"><path d="M9 22h26M9 30h26M9 38h26M14 18v24M22 18v24M30 18v24"/></g></svg>
+    <span><b>Importar catálogo de malhas em PDF</b><small>Clique ou arraste. As colunas (Ø, afastamentos, áreas, peso) são identificadas pela coerência física, com afastamentos em mm ou cm, pares “15 x 15”, áreas em cm²/m ou mm²/m e colunas extra (preço, kg/peça). O PDF tem de ter texto selecionável.</small></span>
+    <input type="file" id="file" accept="application/pdf,.pdf" multiple>
+  </label>
+  <div class="cats">
+    <div class="row"><p class="lbl" style="margin:0">Catálogos de malhas</p><button class="mini" id="resetCats">repor catálogos de referência</button></div>
+    <div id="cats"></div>
+    <div id="progBox" hidden><div class="prog"><i id="prog"></i></div></div>
+    <div class="msg" id="msg"></div>
+  </div>
+</section>
+
+<div class="grid">
+<aside class="panel" aria-label="Requisitos">
+  <div>
+    <p class="lbl">Materiais</p>
+    <div class="fields three">
+      <div class="f"><label for="fck">Betão</label><select id="fck"><option value="20">C20/25</option><option value="25" selected>C25/30</option><option value="30">C30/37</option><option value="35">C35/45</option><option value="40">C40/50</option><option value="45">C45/55</option><option value="50">C50/60</option></select></div>
+      <div class="f"><label for="fyk">Aço</label><select id="fyk"><option value="400">A400</option><option value="500" selected>A500</option></select></div>
+      <div class="f"><label for="acc">α<sub>cc</sub></label><input id="acc" inputmode="decimal" value="1,0"></div>
+    </div>
+  </div>
+
+  <!-- VIGAS E PILARES -->
+  <div class="modeset" id="a_viga">
+    <div class="calc">
+      <p class="lbl" style="margin:0">Pré-dimensionamento à flexão (EC2)</p>
+      <div class="fields">
+        <div class="f"><label for="v_med">M<sub>Ed</sub> (kN·m)</label><input id="v_med" inputmode="decimal" placeholder="—"></div>
+        <div class="f"><label for="v_b">b (mm)</label><input id="v_b" inputmode="decimal" value="300"></div>
+        <div class="f"><label for="v_h">h (mm)</label><input id="v_h" inputmode="decimal" value="500"></div>
+        <div class="f"><label for="v_d">d (mm)</label><input id="v_d" inputmode="decimal" placeholder="auto"></div>
+        <div class="f"><label for="v_c">c<sub>nom</sub> (mm)</label><input id="v_c" inputmode="decimal" value="30"></div>
+        <div class="f"><label for="v_dw">Ø estribo (mm)</label><input id="v_dw" inputmode="decimal" value="8"></div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="v_min" checked> Incluir A<sub>s,min</sub> (EC2 9.2.1.1)</label>
+      <div class="out" id="v_out"></div>
+      <span class="hint">μ = M<sub>Ed</sub>/(b·d²·f<sub>cd</sub>) · ω = 1 − √(1 − 2μ) · A<sub>s</sub> = ω·b·d·f<sub>cd</sub>/f<sub>yd</sub></span>
+    </div>
+    <div>
+      <p class="lbl">Área mínima</p>
+      <div class="fields"><div class="f"><label for="v_as"><b>A<sub>s</sub></b> cm²</label><input id="v_as" inputmode="decimal" placeholder="—"></div></div>
+    </div>
+    <div>
+      <div class="row"><p class="lbl" style="margin:0">Diâmetros (mm)</p><span><button class="mini" data-all="viga">todos</button> · <button class="mini" data-none="viga">nenhum</button></span></div>
+      <div class="chips" id="c_viga" style="margin-top:8px"></div>
+    </div>
+    <div>
+      <p class="lbl">Disposição</p>
+      <div class="fields">
+        <div class="f"><label for="v_dg">Agregado d<sub>g</sub> (mm)</label><input id="v_dg" inputmode="decimal" value="20"></div>
+        <div class="f"><label for="v_lay">Camadas</label><select id="v_lay"><option value="1">Máx. 1</option><option value="2" selected>Máx. 2</option></select></div>
+        <div class="f"><label for="v_nmin">Nº mín. de varões</label><input id="v_nmin" inputmode="decimal" value="2"></div>
+        <div class="f"><label for="v_crit">Critério do melhor</label><select id="v_crit"><option value="a">Menor área</option><option value="n">Menos varões</option></select></div>
+      </div>
+      <label class="toggle" style="margin-top:8px"><input type="checkbox" id="v_mix" checked> Combinar dois diâmetros (ex.: 2Ø20 + 1Ø16)</label>
+    </div>
+  </div>
+
+  <!-- LAJES E SAPATAS -->
+  <div class="modeset" id="a_laje" hidden>
+    <div class="calc">
+      <p class="lbl" style="margin:0">Pré-dimensionamento por metro (EC2)</p>
+      <div class="fields">
+        <div class="f"><label for="l_med">M<sub>Ed</sub> (kN·m/m)</label><input id="l_med" inputmode="decimal" placeholder="—"></div>
+        <div class="f"><label for="l_h">h (mm)</label><input id="l_h" inputmode="decimal" value="200"></div>
+        <div class="f"><label for="l_c">c<sub>nom</sub> (mm)</label><input id="l_c" inputmode="decimal" value="25"></div>
+        <div class="f"><label for="l_d">d (mm)</label><input id="l_d" inputmode="decimal" placeholder="auto"></div>
+        <div class="f"><label for="l_dir">Direção</label><select id="l_dir"><option value="p">Principal</option><option value="s">Secundária</option></select></div>
+        <div class="f"><label for="l_zone">Zona</label><select id="l_zone"><option value="c">Corrente</option><option value="m">M máx. / cargas conc.</option></select></div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="l_min" checked> Incluir A<sub>s,min</sub> (EC2 9.3.1.1)</label>
+      <div class="out" id="l_out"></div>
+      <span class="hint">s<sub>máx</sub> (EC2 9.3.1.1): principal 3h ≤ 400 mm, ou 2h ≤ 250 mm na zona de M máx.; secundária 3,5h ≤ 450 mm, ou 3h ≤ 400 mm</span>
+    </div>
+    <div>
+      <p class="lbl">Requisitos</p>
+      <div class="fields">
+        <div class="f"><label for="l_as"><b>A<sub>s</sub></b> cm²/m</label><input id="l_as" inputmode="decimal" placeholder="—"></div>
+        <div class="f"><label for="l_smax"><b>s</b> máx. (mm)</label><input id="l_smax" inputmode="decimal" placeholder="auto"></div>
+        <div class="f"><label for="l_smin"><b>s</b> mín. (mm)</label><input id="l_smin" inputmode="decimal" value="100"></div>
+        <div class="f"><label for="l_crit">Critério do melhor</label><select id="l_crit"><option value="a">Menor área</option><option value="s">Maior afastamento</option></select></div>
+      </div>
+    </div>
+    <div>
+      <div class="row"><p class="lbl" style="margin:0">Diâmetros (mm)</p><span><button class="mini" data-all="laje">todos</button> · <button class="mini" data-none="laje">nenhum</button></span></div>
+      <div class="chips" id="c_laje" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- ESTRIBOS -->
+  <div class="modeset" id="a_est" hidden>
+    <div class="calc">
+      <p class="lbl" style="margin:0">Pré-dimensionamento ao esforço transverso (EC2)</p>
+      <div class="fields">
+        <div class="f"><label for="e_ved">V<sub>Ed</sub> (kN)</label><input id="e_ved" inputmode="decimal" placeholder="—"></div>
+        <div class="f"><label for="e_cot">cot θ (1 a 2,5)</label><input id="e_cot" inputmode="decimal" value="2,0"></div>
+        <div class="f"><label for="e_b">b<sub>w</sub> (mm)</label><input id="e_b" inputmode="decimal" value="300"></div>
+        <div class="f"><label for="e_h">h (mm)</label><input id="e_h" inputmode="decimal" value="500"></div>
+        <div class="f"><label for="e_c">c<sub>nom</sub> (mm)</label><input id="e_c" inputmode="decimal" value="30"></div>
+        <div class="f"><label for="e_d">d (mm)</label><input id="e_d" inputmode="decimal" placeholder="auto"></div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="e_min" checked> Incluir ρ<sub>w,min</sub> (EC2 9.2.2)</label>
+      <div class="out" id="e_out"></div>
+      <span class="hint">A<sub>sw</sub>/s = V<sub>Ed</sub>/(z·f<sub>ywd</sub>·cot θ), z = 0,9d · s<sub>l,máx</sub> = 0,75d</span>
+    </div>
+    <div>
+      <p class="lbl">Requisitos</p>
+      <div class="fields">
+        <div class="f"><label for="e_as"><b>A<sub>sw</sub>/s</b> cm²/m</label><input id="e_as" inputmode="decimal" placeholder="—"></div>
+        <div class="f"><label for="e_smax"><b>s</b> máx. (mm)</label><input id="e_smax" inputmode="decimal" placeholder="auto"></div>
+        <div class="f"><label for="e_smin"><b>s</b> mín. (mm)</label><input id="e_smin" inputmode="decimal" value="75"></div>
+        <div class="f"><label for="e_crit">Critério do melhor</label><select id="e_crit"><option value="a">Menor área</option><option value="s">Maior espaçamento</option></select></div>
+      </div>
+    </div>
+    <div>
+      <div class="row"><p class="lbl" style="margin:0">Diâmetros (mm)</p><span><button class="mini" data-all="est">todos</button> · <button class="mini" data-none="est">nenhum</button></span></div>
+      <div class="chips" id="c_est" style="margin-top:8px"></div>
+    </div>
+    <div>
+      <p class="lbl">Número de ramos</p>
+      <div class="chips" id="c_ram"></div>
+    </div>
+  </div>
+
+  <!-- MALHAS -->
+  <div class="modeset" id="a_malha" hidden>
+    <div>
+      <p class="lbl">Procurar por nome</p>
+      <input id="m_q" type="search" placeholder="ex.: AR50, NR 80, CQ 60" autocomplete="off">
+    </div>
+    <div class="calc">
+      <p class="lbl" style="margin:0">Pré-dimensionamento por metro (EC2)</p>
+      <div class="fields">
+        <div class="f"><label for="m_med">M<sub>Ed</sub> (kN·m/m)</label><input id="m_med" inputmode="decimal" placeholder="—"></div>
+        <div class="f"><label for="m_h">h (mm)</label><input id="m_h" inputmode="decimal" value="150"></div>
+        <div class="f"><label for="m_c">c<sub>nom</sub> (mm)</label><input id="m_c" inputmode="decimal" value="25"></div>
+        <div class="f"><label for="m_d">d (mm)</label><input id="m_d" inputmode="decimal" placeholder="auto"></div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="m_min" checked> Incluir A<sub>s,min</sub> (EC2 9.3.1.1)</label>
+      <label class="toggle"><input type="checkbox" id="m_20" checked> A<sub>s,trans</sub> ≥ 20 % de A<sub>s,long</sub></label>
+      <div class="out" id="m_out"></div>
+    </div>
+    <div>
+      <p class="lbl">Valores mínimos</p>
+      <div class="fields">
+        <div class="f"><label for="m_asl"><b>A<sub>s,long</sub></b> cm²/m</label><input id="m_asl" inputmode="decimal" placeholder="—"></div>
+        <div class="f"><label for="m_ast"><b>A<sub>s,trans</sub></b> cm²/m</label><input id="m_ast" inputmode="decimal" placeholder="—"></div>
+      </div>
+    </div>
+    <div>
+      <p class="lbl">Valores máximos</p>
+      <div class="fields">
+        <div class="f"><label for="m_smax"><b>s<sub>long</sub></b> (mm)</label><input id="m_smax" inputmode="decimal" placeholder="auto"></div>
+        <div class="f"><label for="m_stmax"><b>s<sub>trans</sub></b> (mm)</label><input id="m_stmax" inputmode="decimal" placeholder="auto"></div>
+        <div class="f"><label for="m_wmax"><b>Peso</b> kg/m²</label><input id="m_wmax" inputmode="decimal" placeholder="—"></div>
+        <div class="f"><label for="m_crit">Critério do melhor</label><select id="m_crit"><option value="w">Menor peso</option><option value="u">Maior aproveitamento</option></select></div>
+      </div>
+    </div>
+    <div>
+      <p class="lbl">Superfície</p>
+      <div class="chips" id="c_surf"></div>
+    </div>
+  </div>
+
+  <!-- RECOBRIMENTOS -->
+  <div class="modeset" id="a_rec" hidden>
+    <div>
+      <div class="row"><p class="lbl" style="margin:0">Classes de exposição</p><button class="mini" id="r_none">limpar</button></div>
+      <div id="c_exp" class="expg" style="margin-top:8px"></div>
+    </div>
+    <details class="calc" id="xaBox">
+      <summary>Classificar o ataque químico XA (EN 206, Quadro 2)</summary>
+      <span class="hint">Águas (mg/l, exceto pH)</span>
+      <div class="fields three">
+        <div class="f"><label for="xa_so4w">SO<sub>4</sub><sup>2−</sup></label><input id="xa_so4w" inputmode="decimal" placeholder="—"></div>
+        <div class="f"><label for="xa_ph">pH</label><input id="xa_ph" inputmode="decimal" placeholder="—"></div>
+        <div class="f"><label for="xa_co2">CO<sub>2</sub> agressivo</label><input id="xa_co2" inputmode="decimal" placeholder="—"></div>
+        <div class="f"><label for="xa_nh4">NH<sub>4</sub><sup>+</sup></label><input id="xa_nh4" inputmode="decimal" placeholder="—"></div>
+        <div class="f"><label for="xa_mg">Mg<sup>2+</sup></label><input id="xa_mg" inputmode="decimal" placeholder="—"></div>
+      </div>
+      <span class="hint">Solos</span>
+      <div class="fields">
+        <div class="f"><label for="xa_so4s">SO<sub>4</sub><sup>2−</sup> total (mg/kg)</label><input id="xa_so4s" inputmode="decimal" placeholder="—"></div>
+        <div class="f"><label for="xa_ac">Acidez (ml/kg)</label><input id="xa_ac" inputmode="decimal" placeholder="—"></div>
+      </div>
+      <div class="out" id="xa_out"></div>
+    </details>
+    <div>
+      <p class="lbl">Classe estrutural (EC2 Quadro 4.3N)</p>
+      <div class="fields">
+        <div class="f"><label for="r_life">Vida útil</label><select id="r_life"><option value="50" selected>50 anos</option><option value="100">100 anos</option></select></div>
+        <div class="f"><label for="r_dev">Δc<sub>dev</sub> (mm)</label><input id="r_dev" inputmode="decimal" value="10"></div>
+      </div>
+      <label class="toggle" style="margin-top:8px"><input type="checkbox" id="r_slab"> Elemento laminar (laje, parede)</label>
+      <label class="toggle"><input type="checkbox" id="r_qc"> Controlo de qualidade especial do betão</label>
+      <span class="hint">A classe de resistência usada é a do campo Betão, em Materiais.</span>
+    </div>
+    <div>
+      <p class="lbl">Armaduras e execução</p>
+      <div class="fields">
+        <div class="f"><label for="r_dw">Ø estribo (mm)</label><input id="r_dw" inputmode="decimal" value="8"></div>
+        <div class="f"><label for="r_dl">Ø varão principal (mm)</label><input id="r_dl" inputmode="decimal" value="16"></div>
+        <div class="f"><label for="r_xm">Abrasão</label><select id="r_xm"><option value="">Sem</option><option value="XM1">XM1 (+5 mm)</option><option value="XM2">XM2 (+10 mm)</option><option value="XM3">XM3 (+15 mm)</option></select></div>
+        <div class="f"><label for="r_cast">Betonagem</label><select id="r_cast"><option value="f">Contra cofragem</option><option value="p">Contra terreno preparado</option><option value="s">Diretamente contra o solo</option></select></div>
+        <div class="f"><label for="r_dgam">Δc<sub>dur,γ</sub> (mm)</label><input id="r_dgam" inputmode="decimal" value="0"></div>
+        <div class="f"><label for="r_dst">Δc<sub>dur,st</sub> (mm)</label><input id="r_dst" inputmode="decimal" value="0"></div>
+        <div class="f"><label for="r_dadd">Δc<sub>dur,add</sub> (mm)</label><input id="r_dadd" inputmode="decimal" value="0"></div>
+      </div>
+      <label class="toggle" style="margin-top:8px"><input type="checkbox" id="r_agg"> Agregado com D<sub>máx</sub> &gt; 32 mm</label>
+      <label class="toggle"><input type="checkbox" id="r_rough"> Superfície irregular ou agregado exposto</label>
+      <span class="hint">Deixe Ø estribo em 0 para lajes sem estribos.</span>
+    </div>
+    <div>
+      <p class="lbl">Comparação com o REBAP (art. 67.º e 78.º)</p>
+      <div class="fields"><div class="f full"><label for="r_amb">Ambiente</label><select id="r_amb"><option value="auto">Automático, a partir das classes</option><option value="1">Pouco agressivo</option><option value="2">Moderadamente agressivo</option><option value="3">Muito agressivo</option></select></div></div>
+    </div>
+  </div>
+
+  <!-- AMARRAÇÃO E EMENDAS -->
+  <div class="modeset" id="a_amar" hidden>
+    <div>
+      <p class="lbl">Diâmetro do varão</p>
+      <div class="chips" id="c_ad"></div>
+    </div>
+    <div>
+      <p class="lbl">Condições</p>
+      <div class="fields">
+        <div class="f"><label for="a_bond">Aderência</label><select id="a_bond"><option value="g">Boa (η1 = 1,0)</option><option value="p">Outras (η1 = 0,7)</option></select></div>
+        <div class="f"><label for="a_load">Esforço</label><select id="a_load"><option value="t">Tração</option><option value="c">Compressão</option></select></div>
+        <div class="f full"><label for="a_shape">Tipo de amarração</label><select id="a_shape"><option value="s">Reta</option><option value="b">Gancho, cotovelo ou laço</option><option value="w">Reta com varão transversal soldado</option></select></div>
+        <div class="f"><label for="a_ratio">A<sub>s,req</sub> / A<sub>s,prov</sub></label><input id="a_ratio" inputmode="decimal" value="1,00"></div>
+        <div class="f"><label for="a_pct">Varões emendados na secção</label><select id="a_pct"><option value="20">≤ 20 %</option><option value="25">25 %</option><option value="33">33 %</option><option value="50" selected>50 %</option><option value="100">100 %</option></select></div>
+      </div>
+      <span class="hint" style="display:block;margin-top:6px">Boa aderência (EC2 Fig. 8.2): varões inclinados 45–90°, ou h ≤ 250 mm, ou na metade inferior do elemento (h &gt; 250 mm), ou a mais de 300 mm da face superior (h &gt; 600 mm).</span>
+    </div>
+    <div class="calc">
+      <p class="lbl" style="margin:0">Coeficientes α<sub>2</sub>, α<sub>3</sub>, α<sub>5</sub> (EC2 Quadro 8.2)</p>
+      <div class="fields">
+        <div class="f"><label for="a_c">Recobrimento c (mm)</label><input id="a_c" inputmode="decimal" value="30"></div>
+        <div class="f"><label for="a_a">Distância livre a (mm)</label><input id="a_a" inputmode="decimal" value="50"></div>
+        <div class="f"><label for="a_K">K (Fig. 8.4)</label><select id="a_K"><option value="0.1">0,10 (varão no canto do estribo)</option><option value="0.05">0,05</option><option value="0">0 (sem confinamento)</option></select></div>
+        <div class="f"><label for="a_ast">ΣA<sub>st</sub> (cm²)</label><input id="a_ast" inputmode="decimal" placeholder="—"></div>
+        <div class="f"><label for="a_el">Elemento</label><select id="a_el"><option value="v">Viga (ΣAst,min = 0,25 As)</option><option value="l">Laje (ΣAst,min = 0)</option></select></div>
+        <div class="f"><label for="a_p">Pressão transversal p (MPa)</label><input id="a_p" inputmode="decimal" placeholder="—"></div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="a_a2" checked> Considerar o efeito do recobrimento (α<sub>2</sub>)</label>
+      <div class="out" id="a_out"></div>
+    </div>
+    <div>
+      <p class="lbl">Comparação com o REBAP (art. 80.º, 81.º e 84.º)</p>
+      <label class="toggle"><input type="checkbox" id="a_far"> Emendas afastadas: a &gt; 10Ø e b &gt; 5Ø (Quadro XII)</label>
+    </div>
+  </div>
+
+  <div class="row"><button class="mini" id="reset">Limpar requisitos</button><span class="hint" id="exNote">Exemplo carregado</span></div>
+</aside>
+
+<main style="display:flex;flex-direction:column;gap:18px;min-width:0">
+  <section class="panel result" id="result" aria-live="polite"></section>
+  <section class="panel">
+    <div class="tblhead">
+      <div class="count" id="count"></div>
+      <div class="legend" id="legend"><span><i class="okc"></i>cumpre</span><span><i></i>área insuficiente</span><span><i class="nf"></i>não cabe / fora dos limites</span><span><i class="best"></i>melhor</span></div>
+      <label class="toggle" id="onlyOkBox" hidden><input type="checkbox" id="onlyOk"> Mostrar só as que cumprem</label>
+    </div>
+    <div class="tw"><table id="tbl"><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+  </section>
+  <p class="note" id="note"></p>
+</main>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+/* Leitura de catálogos de malhas electrossoldadas a partir do texto posicionado de um PDF.
+   Entrada: páginas = [[{s,x,y,w,fs}]] (y cresce para cima). Saída: malhas normalizadas.
+   Colunas identificadas pela coerência física: As = π·Ø²/4 · 1000/s  e  peso ≈ 0,785·(As,L + As,T).
+   Aceita: Ø e afastamentos em colunas separadas ou em pares "15 x 15" / "3,4 x 3,4"; afastamento em mm ou cm;
+   áreas em cm²/m ou mm²/m; colunas extra (preço, kg/peça, dimensões do painel); designação numa linha à parte;
+   descrições após a designação ("1/2 Rolo", "Painel"); peso com fator próprio do fabricante (sobreposições). */
+const MeshParser = (() => {
+  const AB = d => Math.PI * d * d / 400;             // cm² por varão
+  const ASM = (d, s) => AB(d) * 1000 / s;            // cm²/m
+  const LOG = Math.log10;
+  const deacc = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const NUM = /^\d+(?:[.,]\d+)?$/;
+  const NAME = "([A-Z]{1,4})([\\s-]?)(\\d{1,4})(?:\\s?\\/\\s?(\\d+(?:[.,]\\d+)?))?((?:\\s+(?:\\(?[A-Za-zÀ-ú.]{2,}\\)?|\\d\\/\\d))*)";
+  const ROW = new RegExp("^" + NAME + "\\s+(.+)$");
+  const NAMEONLY = new RegExp("^" + NAME + "$");
+  const med = a => { const b = a.filter(v => v != null && isFinite(v)).sort((x, y) => x - y); if (!b.length) return null; const m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+
+  function linesOf(items) {
+    const it = items.filter(i => i.s && i.s.trim()).sort((a, b) => b.y - a.y || a.x - b.x);
+    const lines = [];
+    for (const i of it) {
+      let L = null;
+      for (let k = lines.length - 1; k >= 0 && k >= lines.length - 3; k--) if (Math.abs(lines[k].y - i.y) <= Math.max(2, 0.4 * (i.fs || 8))) { L = lines[k]; break; }
+      if (!L) { L = { y: i.y, fs: i.fs || 8, items: [] }; lines.push(L); }
+      L.items.push(i); L.fs = Math.max(L.fs, i.fs || 8);
+    }
+    lines.forEach(L => L.text = L.items.sort((a, b) => a.x - b.x).map(i => i.s).join(" ").replace(/\s+/g, " ").trim());
+    return lines;
+  }
+  function surfOf(t) {
+    const lo = deacc(t.toLowerCase());
+    if (/nerv|a500\s?er|a500\s?nr|a400\s?nr|rugos|ca-?50|ca-?60\s*nerv/.test(lo)) return "nerv";
+    if (/\blisa\b|\blisos?\b|a500\s?el|superficie lisa/.test(lo)) return "lisa";
+    return null;
+  }
+  // valores separados por "x" passam a valores independentes: "15 x 15" → 15 15
+  const splitNums = s => s.replace(/(\d)\s*[x×X*]\s*(?=\d)/g, "$1 ").trim().split(" ");
+  const numsOnly = t => { const k = splitNums(t); return k.length >= 3 && k.every(v => NUM.test(v)) ? k : null; };
+
+  function rowsFromPages(pages) {
+    const rows = []; let carry = "";
+    pages.forEach((items, pi) => {
+      const lines = linesOf(items);
+      const heads = lines.map(L => ({ y: L.y, s: surfOf(L.text) })).filter(h => h.s);
+      if (!heads.length && carry) heads.push({ y: Infinity, s: carry });
+      if (heads.length) carry = [...heads].sort((a, b) => a.y - b.y)[0].s;
+      // designação numa linha e valores na linha vizinha (células com alinhamento vertical diferente)
+      const used = new Set();
+      lines.forEach((L, i) => {
+        if (!NAMEONLY.test(L.text)) return;
+        const near = lines.filter(N => N !== L && !used.has(N) && Math.abs(N.y - L.y) <= 1.6 * L.fs && numsOnly(N.text) && !ROW.test(N.text))
+          .sort((a, b) => Math.abs(a.y - L.y) - Math.abs(b.y - L.y));
+        if (near.length) { L.text += " " + near[0].text; used.add(near[0]); }
+      });
+      for (const L of lines) {
+        if (used.has(L)) continue;
+        const m = L.text.match(ROW); if (!m) continue;
+        const toks = splitNums(m[6]);
+        if (!toks.every(t => NUM.test(t)) || toks.length < 3 || toks.length > 14) continue;
+        const nums = toks.map(t => parseFloat(t.replace(",", ".")));
+        const above = heads.filter(h => h.y > L.y + 1).sort((a, b) => a.y - b.y)[0];
+        const near = above || heads.sort((a, b) => Math.abs(a.y - L.y) - Math.abs(b.y - L.y))[0];
+        const desc = (m[5] || "").trim();
+        rows.push({ name: `${m[1]}${m[2] ? " " : ""}${m[3]}${m[4] ? "/" + m[4] : ""}${desc ? " (" + desc + ")" : ""}`, nums, surf: near ? near.s : "", page: pi + 1 });
+      }
+    });
+    return rows;
+  }
+  const close = (a, b, tol) => a > 0 && b > 0 && Math.abs(LOG(a / b)) < tol;
+
+  // avaliar um mapeamento de colunas num conjunto de linhas
+  function evalMap(rows, mp) {
+    const g = (r, j) => r.nums[j];
+    const ok = rows.filter(r => [mp.dL, mp.dT, mp.sL, mp.sT].every(j => j < r.nums.length && g(r, j) > 0));
+    if (ok.length < rows.length) return null;
+    const aL = rows.map(r => ASM(g(r, mp.dL), g(r, mp.sL) * mp.fL)), aT = rows.map(r => ASM(g(r, mp.dT), g(r, mp.sT) * mp.fT));
+    return { aL, aT };
+  }
+  function scoreCols(rows, mp, aL, aT, rest) {
+    const frac = f => rows.filter((r, i) => f(r, i)).length / rows.length;
+    // peso: razão constante entre o valor da coluna e 0,785·ΣAs (fatores de fabricante até ±15 %)
+    let w = null;
+    for (const j of rest) {
+      const rat = rows.map((r, i) => r.nums[j] / (0.785 * (aL[i] + aT[i])));
+      const m = med(rat); if (!m || Math.abs(LOG(m)) > 0.061) continue;
+      const f = frac((r, i) => Math.abs(LOG(rat[i] / m)) < 0.012);
+      const pen = Math.abs(LOG(m)) > 0.02 ? 0.1 : 0;          // preferir fator ≈ 1
+      if (f > 0.5 && (!w || f - pen > w.f - w.pen)) w = { j, f, k: m, pen };
+    }
+    const area = (ref, ex) => { let b = null; for (const j of rest) { if (ex.includes(j)) continue;
+      for (const sc of [1, 0.01]) { const f = frac((r, i) => close(r.nums[j] * sc, ref[i], 0.02)); if (f > 0.5 && (!b || f > b.f)) b = { j, f, sc }; } } return b; };
+    const cL = area(aL, w ? [w.j] : []);
+    const cT = area(aT, [w && w.j, cL && cL.j].filter(x => x != null));
+    // quando as duas direções têm a mesma área, a coluna escolhida para A_L pode ser a de A_T: ordenar pela posição
+    if (cL && cT && cL.j > cT.j && frac((r, i) => close(aL[i], aT[i], 0.002)) === 1) { const t = cL.j; cL.j = cT.j; cT.j = t; }
+    return { w, cL, cT, frac };
+  }
+  function solveGroup(rows) {
+    const k = Math.min(...rows.map(r => r.nums.length)), J = [...Array(k).keys()];
+    const all = (j, f) => rows.every(r => f(r.nums[j]));
+    const D = J.filter(j => all(j, v => v >= 2 && v <= 20));
+    const S = [];
+    J.forEach(j => {
+      if (all(j, v => v >= 40 && v <= 400 && Math.abs(v - Math.round(v)) < 1e-9)) S.push({ j, f: 1 });   // mm
+      if (all(j, v => v >= 4 && v <= 40 && Math.abs(2 * v - Math.round(2 * v)) < 1e-9)) S.push({ j, f: 10 }); // cm
+    });
+    let best = null;
+    for (const dL of D) for (const dT of D) for (const sL of S) for (const sT of S) {
+      const same = dL === dT || sL.j === sT.j;
+      if (same && !(dL === dT && sL.j === sT.j)) continue;          // malha quadrada com uma só coluna de Ø e de s
+      if (sL.f !== sT.f || [dL, dT].includes(sL.j) || [dL, dT].includes(sT.j)) continue;
+      const mp = { dL, dT, sL: sL.j, sT: sT.j, fL: sL.f, fT: sT.f };
+      const E = evalMap(rows, mp); if (!E) continue;
+      const rest = J.filter(j => ![dL, dT, sL.j, sT.j].includes(j));
+      const { w, cL, cT, frac } = scoreCols(rows, mp, E.aL, E.aT, rest);
+      let score = (w ? 2 * w.f - w.pen : 0) + (cL ? cL.f : 0) + (cT ? cT.f : 0);
+      score += 0.1 * frac((r, i) => E.aL[i] >= E.aT[i] - 1e-9) + (dL < dT ? 0.05 : 0) + (sL.j < sT.j ? 0.02 : 0) - (same ? 0.03 : 0) + (sL.f === 1 ? 0.01 : 0);
+      if (!best || score > best.score) best = { ...mp, score, w: w && w.j, wk: w ? w.k : 1, aL: cL && cL.j, aT: cT && cT.j, scL: cL ? cL.sc : 1, scT: cT ? cT.sc : 1, wf: w ? w.f : null, verified: !!(w || cL) };
+    }
+    return best;
+  }
+  function meshesFromPages(pages) {
+    const rows = rowsFromPages(pages);
+    const groups = new Map(); rows.forEach(r => { const k = r.nums.length; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r); });
+    const G = [...groups.values()].sort((a, b) => b.length - a.length);
+    const out = [], tables = [], solved = [];
+    for (const g of G) {
+      let c = g.length >= 2 ? solveGroup(g) : null;
+      // grupos pequenos ou sem verificação: reaproveitar o mapeamento de uma tabela já resolvida (ex.: preço numa linha à parte)
+      if (!c || !c.verified) for (const p of solved) {
+        const E = evalMap(g, p); if (!E) continue;
+        const idx = [p.w, p.aL, p.aT].filter(j => j != null);
+        if (idx.some(j => g.some(r => j >= r.nums.length))) continue;
+        const okW = p.w == null || g.every((r, i) => Math.abs(LOG(r.nums[p.w] / (0.785 * (E.aL[i] + E.aT[i]) * p.wk))) < 0.025);
+        if (okW) { c = { ...p, reused: true }; break; }
+      }
+      if (!c) continue;
+      if (!c.reused) solved.push(c);
+      tables.push({ cols: g[0].nums.length, rows: g.length, check: c.wf, map: c });
+      for (const r of g) {
+        const v = r.nums, dL = v[c.dL], dT = v[c.dT], sL = v[c.sL] * c.fL, sT = v[c.sT] * c.fT;
+        const aLc = ASM(dL, sL), aTc = ASM(dT, sT);
+        const aL = c.aL != null ? +(v[c.aL] * c.scL).toFixed(2) : +aLc.toFixed(2), aT = c.aT != null ? +(v[c.aT] * c.scT).toFixed(2) : +aTc.toFixed(2);
+        const w = c.w != null ? v[c.w] : +(0.785 * (aL + aT)).toFixed(2);
+        const calc = [c.aL == null && "aL", c.aT == null && "aT", c.w == null && "w"].filter(Boolean);
+        const warn = !close(w, 0.785 * (aLc + aTc) * c.wk, 0.03) || !close(aL, aLc, 0.04) || !close(aT, aTc, 0.04);
+        out.push({ n: r.name, dL, sL, dT, sT, aL, aT, w, surf: r.surf, page: r.page, calc, warn, wk: +c.wk.toFixed(3) });
+      }
+    }
+    // a mesma malha repetida (rolo / painel) fica uma só vez
+    const seen = new Set(), meshes = out.filter(m => { const key = [m.n, m.dL, m.sL, m.dT, m.sT].join("|"); if (seen.has(key)) return false; seen.add(key); return true; });
+    return { meshes, tables, rows: rows.length };
+  }
+  return { meshesFromPages, rowsFromPages, AB, ASM };
+})();
+if (typeof module !== "undefined") module.exports = MeshParser;
+
+</script>
+<script>
+const $=id=>document.getElementById(id);
+const AB=MeshParser.AB, ASM=MeshParser.ASM;
+const KG=0.785; // kg/m por cm² de aço
+const DIAMS=[6,8,10,12,14,16,20,25,32,40];
+const SPL=[50,100,125,150,175,200,225,250,275,300,325,350,375,400];
+const SPE=[50,75,100,125,150,175,200,225,250,275,300];
+const NMAX=12;
+
+// ---------- catálogos de referência (fornecidos) ----------
+const mk=(surf)=>([n,dL,sL,dT,sT,aL,aT,w])=>({n,dL,sL,dT,sT,aL:aL??+ASM(dL,sL).toFixed(2),aT:aT??+ASM(dT,sT).toFixed(2),w:w??+(KG*(ASM(dL,sL)+ASM(dT,sT))).toFixed(2),surf,calc:[aL==null&&"aL",aT==null&&"aT",w==null&&"w"].filter(Boolean)});
+const REF=[
+ {id:"ref-rede",name:"Rede electrossoldada (tabela geral)",ref:true,meshes:[
+  ["AR30",3.0,100,3.0,300,0.70,0.24,0.74],["AR34",3.4,100,3.4,300,0.91,0.30,0.95],["AR38",3.8,100,3.8,300,1.13,0.38,1.19],["AR42",4.2,100,4.2,300,1.38,0.46,1.45],["AR46",4.6,100,4.2,300,1.67,0.46,1.67],["AR50",5.0,100,4.2,300,1.96,0.46,1.90],["AR55",5.5,100,4.2,300,2.38,0.46,2.23],["AR60",6.0,100,4.6,300,2.83,0.55,2.65],["AR65",6.5,100,5.0,300,3.32,0.66,3.12],["AR70",7.0,100,5.5,300,3.85,0.79,3.65],["AR76",7.6,100,6.0,300,4.54,0.94,4.30],["AR82",8.2,100,6.5,300,5.28,1.12,5.02],["AR90",9.0,100,7.0,300,6.36,1.28,6.00],["AR100",10.0,100,7.6,300,7.85,1.51,7.35],["AR110",11.0,100,8.2,300,9.50,1.76,8.84],["AR120",12.0,100,7.6,200,11.31,2.27,10.66],["AR130",13.0,100,8.2,200,13.27,2.64,12.49],["AR140",14.0,100,8.2,150,15.39,3.52,14.84],
+  ["CQ30",3.0,150,3.0,150,0.47,0.47,0.74],["CQ38",3.8,150,3.8,150,0.76,0.76,1.19],["DQ25",2.5,50,2.5,50,0.98,0.98,1.54],["DQ30",3.0,50,3.0,50,1.42,1.42,2.22],
+  ["AQ25",2.5,100,2.5,100,0.49,0.49,0.77],["AQ30",3.0,100,3.0,100,0.70,0.70,1.10],["AQ38",3.8,100,3.8,100,1.13,1.13,1.77],["AQ50",5.0,100,5.0,100,1.96,1.96,3.08],
+  ["AC60",6.0,100,4.6,150,2.83,1.10,3.09],["AC70",7.0,100,5.5,150,3.85,1.58,4.26],["AC82",8.2,100,6.5,150,5.28,2.24,5.90],["AC90",9.0,100,7.0,150,6.36,2.57,7.01],["AC100",10.0,100,7.6,150,7.85,3.03,8.54],["AC110",11.0,100,8.2,150,9.50,3.52,10.22],["AC120",12.0,100,7.6,100,11.31,4.54,12.44],["AC130",13.0,100,8.2,100,13.27,5.28,14.56],["AC140",14.0,100,8.2,100,15.39,5.28,16.22]
+ ].map(mk(""))},
+ {id:"ref-nordesfer",name:"Nordesfer — malha electrossoldada",ref:true,meshes:[
+  ...[["CQ 30",3,150,3,150,,,0.74],["CQ 38",3.8,150,3.8,150,,,1.19],["AQ 30",3,100,3,100,,,1.10],["AQ 38",3.8,100,3.8,100,,,1.77],["AR 30",3,100,3,300,,,0.74],["AR 34",3.4,100,3.4,300,,,0.95],["AR 38",3.8,100,3.8,300,,,1.19]].map(mk("lisa")),
+  ...[["AQ 40",4,100,4,100,,,1.97],["AQ 45",4.5,100,4.5,100,,,2.50],["AQ 50",5,100,5,100,,,3.08],["AQ 60",6,100,6,100,,,4.44],["AQ 70",7,100,7,100,,,6.04],["AQ 80",8,100,8,100,,,7.89],["AQ 90",9,100,9,100,,,9.99],["AQ 100",10,100,10,100,,,12.33],["AQ 120",12,100,12,100,,,17.76],
+      ["CQ 40",4,150,4,150,,,1.32],["CQ 45",4.5,150,4.5,150,,,1.66],["CQ 50",5,150,5,150,,,2.06],["CQ 60",6,150,6,150,,,2.96],["CQ 70",7,150,7,150,,,4.03],["CQ 80",8,150,8,150,,,5.26],["CQ 90",9,150,9,150,,,6.66],["CQ 100",10,150,10,150,,,8.22],["CQ 120",12,150,12,150,,,11.84],
+      ["AR 40",4,100,4,300,,,1.32],["AR 45/4",4.5,100,4,300,,,1.58],["AR 50/5",5,100,5,300,,,2.06],["AR 55/5",5.5,100,5,300,,,2.38],["AR 60/5",6,100,5,300,,,2.73],["AR 65/5",6.5,100,5,300,,,3.12],["AR 70/5,5",7,100,5.5,300,,,3.64],["AR 75/6",7.5,100,6,300,,,4.21],["AR 80/6,5",8,100,6.5,300,,,4.81],["AR 85/6,5",8.5,100,6.5,300,,,5.32],["AR 90/7",9,100,7,300,,,6.00],["AR 100/7,5",10,100,7.5,300,,,7.32],["AR 120/10",12,100,10,300,,,10.93]].map(mk("nerv"))]},
+ {id:"ref-major",name:"Major — rede electrossoldada (2023)",ref:true,meshes:[
+  ...[["FCQ 30",3,150,3,150,,,0.74],["FCQ 38",3.8,150,3.8,150,,,1.19],["FAQ 30",3,100,3,100,,,1.10],["FAQ 38",3.8,100,3.8,100,,,1.77],["FAR 30",3,100,3,300,,,0.74],["FAR 34",3.4,100,3.4,300,,,0.95],["FAR 38",3.8,100,3.8,300,,,1.19]].map(mk("lisa")),
+  ...[["FNQ 40",4,100,4,100,,,1.97],["FNQ 45",4.5,100,4.5,100,,,2.50],["FNQ 50",5,100,5,100,,,3.08],["FNQ 60",6,100,6,100,,,4.44],["FNQ 70",7,100,7,100,,,6.04],["FNQ 80",8,100,8,100,,,7.89],["FNQ 90",9,100,9,100,,,9.99],["FNQ 100",10,100,10,100,,,12.33],["FNQ 120",12,100,12,100,,,17.76],
+      ["FND 40",4,150,4,150,,,1.32],["FND 45",4.5,150,4.5,150,,,1.66],["FND 50",5,150,5,150,,,2.06],["FND 60",6,150,6,150,,,2.96],["FND 70",7,150,7,150,,,4.03],["FND 80",8,150,8,150,,,5.26],["FND 90",9,150,9,150,,,6.66],["FND 100",10,150,10,150,,,8.22],["FND 120",12,150,12,150,,,11.84],
+      ["FNR 40",4,100,4,300,,,1.32],["FNR 45/4",4.5,100,4,300,,,1.58],["FNR 50/5",5,100,5,300,,,2.06],["FNR 55/5",5.5,100,5,300,,,2.38],["FNR 60/5",6,100,5,300,,,2.73],["FNR 65/5",6.5,100,5,300,,,3.12],["FNR 70/5,5",7,100,5.5,300,,,3.64],["FNR 75/6",7.5,100,6,300,,,4.21],["FNR 80/6,5",8,100,6.5,300,,,4.81],["FNR 85/6,5",8.5,100,6.5,300,,,5.32],["FNR 90/7",9,100,7,300,,,6.00],["FNR 100/7,5",10,100,7.5,300,,,7.32],["FNR 120/10",12,100,10,300,,,10.93]].map(mk("nerv"))]},
+ {id:"ref-msl",name:"Tabelas MSL — A500 EL / A500 ER",ref:true,meshes:[
+  ...[["MR 30",3,100,3,300,0.70,0.24,0.74],["MR 34",3.4,100,3.4,300,0.91,0.30,0.95],["MR 38",3.8,100,3.8,300,1.13,0.38,1.19],["MAQ 30",3,100,3,100,0.70,0.70,1.10],["MAQ 38",3.8,100,3.8,100,1.13,1.13,1.77],["MCQ 30",3,150,3,150,0.47,0.47,0.74],["MCQ 38",3.8,150,3.8,150,0.76,0.76,1.19],["MDQ 30",3,50,3,50,1.41,1.41,2.23]].map(mk("lisa")),
+  ...[["NR 40",4,100,4,300,1.26,0.42,1.32],["NR 45",4.5,100,4,300,1.59,0.42,1.58],["NR 50",5,100,5,300,1.95,0.65,2.06],["NR 55",5.5,100,5,300,2.38,0.65,2.38],["NR 60",6,100,5,300,2.83,0.65,2.73],["NR 65",6.5,100,5,300,3.32,0.65,3.12],["NR 70",7,100,5.5,300,3.85,0.79,3.65],["NR 75",7.5,100,6,300,4.42,0.94,4.21],["NR 80",8,100,6.5,300,5.03,1.11,4.81],["NR 85",8.5,100,6.5,300,5.67,1.11,5.32],["NR 90",9,100,7,300,6.36,1.28,6.00],["NR 100",10,100,7.5,300,7.85,1.47,7.32],["NR 120",12,100,10,300,11.31,2.62,10.93],["NR 140",14,100,12,300,15.39,3.77,15.04],["NR 160",16,100,14,300,20.11,5.13,18.74],
+      ["NAQ 40",4,100,4,100,1.26,1.26,1.98],["NAQ 45",4.5,100,4.5,100,1.59,1.59,2.50],["NAQ 50",5,100,5,100,1.96,1.96,3.08],["NAQ 60",6,100,6,100,2.83,2.83,4.44],["NAQ 70",7,100,7,100,3.85,3.85,6.04],["NAQ 80",8,100,8,100,5.03,5.03,7.90],["NAQ 90",9,100,9,100,6.36,6.36,9.98],["NAQ 100",10,100,10,100,7.85,7.85,12.34],["NAQ 120",12,100,12,100,11.31,11.31,17.76],["NAQ 140",14,100,14,100,15.39,15.39,24.17],["NAQ 160",16,100,16,100,20.11,20.11,31.57],
+      ["MCQ 40",4,150,4,150,0.94,0.94,1.32],["MCQ 45",4.5,150,4.5,150,1.06,1.06,1.66],["MCQ 50",5,150,5,150,1.31,1.31,2.06],["MCQ 60",6,150,6,150,1.88,1.88,2.96],["MCQ 70",7,150,7,150,2.57,2.57,4.02],["MCQ 80",8,150,8,150,3.35,3.35,5.26],["MCQ 90",9,150,9,150,4.24,4.24,6.66],["MCQ 100",10,150,10,150,5.24,5.24,8.22],["MCQ 120",12,150,12,150,7.54,7.54,11.84],["MCQ 140",14,150,14,150,10.26,10.26,16.11],["MCQ 160",16,150,16,150,13.40,13.40,21.04],
+      ["NC 50",5,100,5,150,1.96,1.31,2.57],["NC 60",6,100,5,150,2.83,1.31,3.25],["NC 70",7,100,5.5,150,3.85,1.58,4.26],["NC 80",8,100,6.5,150,5.03,2.21,5.68],["NC 90",9,100,7,150,6.36,2.57,7.01],["NC 100",10,100,7.5,150,7.85,2.95,8.48],["NC 120",12,100,10,150,11.31,5.24,12.99],["NC 140",14,100,12,150,15.39,7.54,18.00],["NC 160",16,100,14,150,20.11,10.26,23.84]].map(mk("nerv"))]}
+];
+// assinalar dados incoerentes do catálogo (área ou peso que não batem com Ø e afastamento)
+const LOG=Math.log10;
+function flag(m){const aLc=ASM(m.dL,m.sL),aTc=ASM(m.dT,m.sT);const bad=(a,b,t)=>Math.abs(LOG(a/b))>t;m.warn=bad(m.w,KG*(aLc+aTc),.06)||bad(m.aL,aLc,.04)||bad(m.aT,aTc,.04);return m}
+REF.forEach(s=>s.meshes.forEach(flag));
+
+// ---------- estado ----------
+const st={exp:new Set(["XC4","XS1"]),aphi:16,mode:"viga",d:{viga:new Set([12,16,20,25]),laje:new Set([8,10,12,16]),est:new Set([6,8,10])},ram:new Set([2]),surf:new Set(["lisa","nerv",""]),pick:null,sort:"w",dir:1,sources:[],off:new Set()};
+const nf=(v,d)=>{if(v==null||isNaN(v)||!isFinite(v))return"—";const a=Math.abs(v);const dec=d!=null?d:(a>=100?0:a>=10?1:2);return v.toLocaleString("pt-PT",{minimumFractionDigits:dec,maximumFractionDigits:dec}).replace(/ | /g," ")};
+const fs=s=>(s/1000).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:3});
+const num=id=>{const s=$(id).value.trim().replace(",",".");if(!s)return null;const v=parseFloat(s);return isNaN(v)?null:v};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const norm=s=>s.toLowerCase().replace(/[\s\/,.]/g,"");
+function mat(){const fck=+$("fck").value,fyk=+$("fyk").value,acc=num("acc")||1;return{fck,fyk,acc,fcd:acc*fck/1.5,fyd:fyk/1.15,fctm:0.30*Math.pow(fck,2/3)}}
+// flexão simples, secção rectangular, diagrama rectangular simplificado (λ = 0,8)
+function flex(M,b,d){const m=mat();const mu=M*1e6/(b*d*d*m.fcd);if(!(mu<0.5))return{mu,As:null};const w=1-Math.sqrt(1-2*mu);return{mu,w,xd:w/0.8,As:w*b*d*m.fcd/m.fyd/100}}
+const asmin=(b,d)=>{const m=mat();return Math.max(0.26*m.fctm/m.fyk,0.0013)*b*d/100};
+const line=(t,w)=>`<span${w?' class="w"':""}>${t}</span>`;
+
+// ---------- separadores ----------
+function setMode(m){st.mode=m;st.pick=null;
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.mode===m));
+  ["viga","laje","est","malha","rec","amar"].forEach(k=>$("a_"+k).hidden=k!==m);
+  $("imp").hidden=m!=="malha";$("onlyOkBox").hidden=m!=="malha";$("legend").hidden=m!=="viga"&&m!=="laje"&&m!=="est";
+  save();run()}
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+
+// ---------- chips ----------
+function chips(){
+  for(const k of ["viga","laje","est"]){const el=$("c_"+k);el.innerHTML="";
+    DIAMS.forEach(d=>{const b=document.createElement("button");b.className="chip";b.textContent="Ø"+d;b.setAttribute("aria-pressed",st.d[k].has(d));
+      b.onclick=()=>{st.d[k].has(d)?st.d[k].delete(d):st.d[k].add(d);b.setAttribute("aria-pressed",st.d[k].has(d));st.pick=null;run()};el.appendChild(b)})}
+  $("c_ram").innerHTML="";[2,3,4].forEach(r=>{const b=document.createElement("button");b.className="chip";b.textContent=r+" ramos";b.setAttribute("aria-pressed",st.ram.has(r));
+    b.onclick=()=>{st.ram.has(r)?st.ram.delete(r):st.ram.add(r);b.setAttribute("aria-pressed",st.ram.has(r));st.pick=null;run()};$("c_ram").appendChild(b)});
+  $("c_surf").innerHTML="";[["lisa","Lisa"],["nerv","Nervurada"],["","Não indicada"]].forEach(([k,l])=>{const b=document.createElement("button");b.className="chip";b.textContent=l;b.setAttribute("aria-pressed",st.surf.has(k));
+    b.onclick=()=>{st.surf.has(k)?st.surf.delete(k):st.surf.add(k);b.setAttribute("aria-pressed",st.surf.has(k));st.pick=null;run()};$("c_surf").appendChild(b)});
+}
+document.querySelectorAll("[data-all]").forEach(b=>b.onclick=()=>{st.d[b.dataset.all]=new Set(DIAMS);chips();st.pick=null;run()});
+document.querySelectorAll("[data-none]").forEach(b=>b.onclick=()=>{st.d[b.dataset.none]=new Set();chips();st.pick=null;run()});
+
+// ================= VIGAS E PILARES =================
+function reqViga(){
+  const b=num("v_b"),h=num("v_h"),c=num("v_c")??30,dw=num("v_dw")??8,M=num("v_med");
+  const d=num("v_d")??(h?h-c-dw-10:null);
+  let As=num("v_as"),out=[];
+  if(M!=null&&b&&d){const f=flex(M,b,d);if(f.As==null)out.push(line(`μ = ${nf(f.mu,3)} — secção insuficiente, aumente b ou h`,1));
+    else{out.push(line(`d = ${nf(d,0)} mm · μ = ${nf(f.mu,3)} · x/d = ${nf(f.xd,2)}`,f.xd>0.45));out.push(line(`A<sub>s,req</sub> = ${nf(f.As,2)} cm²`));if(f.xd>0.45)out.push(line("x/d > 0,45: considere armadura de compressão ou aumentar a secção",1));As=Math.max(As??0,f.As)}}
+  let amin=null;if($("v_min").checked&&b&&d){amin=asmin(b,d);out.push(line(`A<sub>s,min</sub> = ${nf(amin,2)} cm²`));if(As!=null)As=Math.max(As,amin)}
+  const amax=b&&h?0.04*b*h/100:null;
+  $("v_out").innerHTML=out.join("");
+  return{As,b,h,c,dw,d,amin,amax,wav:b?b-2*c-2*dw:0,dg:num("v_dg")??20,lay:+$("v_lay").value,nmin:Math.max(1,num("v_nmin")??2)};
+}
+const smin=(dmax,R)=>Math.max(dmax,R.dg+5,20);
+// distribuir varões (maiores primeiro) por camadas que cabem na largura útil
+function layout(list,R){const s=smin(Math.max(...list),R);const L=[[]];
+  for(const d of [...list].sort((a,b)=>b-a)){const cur=L[L.length-1];const need=cur.reduce((a,x)=>a+x,0)+d+cur.length*s;
+    if(need>R.wav+1e-9){if(!cur.length)return null;L.push([d])}else cur.push(d)}return{L,s}}
+function vCand(parts,R){
+  const list=parts.flatMap(([n,d])=>Array(n).fill(d));const n=list.length;const As=parts.reduce((a,[k,d])=>a+k*AB(d),0);
+  const lay=R.wav>0?layout(list,R):null;const fits=!!lay&&lay.L.length<=R.lay;
+  const fails=[];if(R.As!=null&&As<R.As-1e-9)fails.push("As");if(!fits)fails.push("fit");if(n<R.nmin)fails.push("n");if(R.amax&&As>R.amax)fails.push("max");
+  const lbl=parts.map(([k,d])=>`${k}Ø${d}`).join(" + ");
+  return{id:"v|"+parts.map(p=>p.join("x")).join("|"),lbl,parts,list,n,As,lay,fits,fails,ok:!fails.length,kg:KG*As,u:R.As?R.As/As:null}}
+function solveViga(){
+  const R=reqViga();const ds=[...st.d.viga].sort((a,b)=>a-b);const grid=[],all=[];
+  for(const d of ds){const row=[];for(let n=1;n<=NMAX;n++){const c=vCand([[n,d]],R);row.push(c);all.push(c)}grid.push({d,row})}
+  if($("v_mix").checked)for(let i=0;i<ds.length;i++)for(let j=Math.max(0,i-2);j<i;j++){const d1=ds[i],d2=ds[j];
+    for(let n1=2;n1<=8;n1++)for(let n2=1;n2<=n1&&n1+n2<=NMAX;n2++)all.push(vCand([[n1,d1],[n2,d2]],R))}
+  const crit=$("v_crit").value;
+  const rank=all.filter(c=>c.ok).sort(crit==="n"?(a,b)=>a.n-b.n||a.As-b.As:(a,b)=>a.As-b.As||a.n-b.n||a.parts.length-b.parts.length);
+  return{R,grid,all,rank,any:R.As!=null}}
+function tableViga(S,best,pick){
+  $("tbl").className="g";
+  $("thead").innerHTML=`<tr><th>Ø (mm)<small>${S.R.wav>0?"b útil "+nf(S.R.wav,0)+" mm":""}</small></th>${Array.from({length:NMAX},(_,i)=>`<th>${i+1}<small>&nbsp;</small></th>`).join("")}</tr>`;
+  $("tbody").innerHTML=S.grid.map(({d,row})=>`<tr><td>Ø${d}<small class="hint"> · ${nf(0.00617*d*d,3)} kg/m</small></td>${row.map(c=>{
+    const cls=[c.ok?"okc":"",c.fails.includes("fit")||c.fails.includes("n")||c.fails.includes("max")?"nf":"",best&&c.id===best.id?"best":"",pick&&c.id===pick.id&&(!best||c.id!==best.id)?"pick":""].join(" ");
+    const t=c.fails.includes("fit")?"não cabe na largura":c.fails.includes("n")?"abaixo do nº mínimo":c.fails.includes("max")?"acima de As,máx":"";
+    return `<td class="${cls}" data-id="${c.id}" tabindex="0" title="${c.lbl}${t?" — "+t:""}">${nf(c.As,2)}${c.lay&&c.lay.L.length>1&&c.fits?"<sup>2c</sup>":""}</td>`}).join("")}</tr>`).join("")||`<tr><td colspan="${NMAX+1}" style="text-align:left">Escolha pelo menos um diâmetro.</td></tr>`;
+  $("count").innerHTML=`Área de armadura A<sub>s</sub> (cm²) por <b>número de varões</b>${S.any?` · <b>${S.rank.length}</b> soluções cumprem${$("v_mix").checked?" (incl. combinações)":""}`:""}`;
+}
+function cardViga(p,best,S){
+  const R=S.R;if(!p)return empty(S.any?"Nenhuma solução cumpre":"Sem requisitos",S.any?"Nenhuma disposição com os diâmetros escolhidos satisfaz a área e cabe na secção. Junte diâmetros maiores, permita 2 camadas ou reveja b e c.":"Indique A<sub>s</sub> ou o momento M<sub>Ed</sub> e a secção.");
+  const l1=p.lay?p.lay.L[0]:[];const clear=l1.length>1?(R.wav-l1.reduce((a,x)=>a+x,0))/(l1.length-1):null;
+  const util=[];if(R.As!=null)util.push(["A<sub>s</sub>",R.As/p.As,`${nf(p.As,2)} ≥ ${nf(R.As,2)} cm²`]);
+  if(p.lay){const need=l1.reduce((a,x)=>a+x,0)+(l1.length-1)*p.lay.s;util.push(["Largura (1ª camada)",need/R.wav,`${nf(need,0)} ≤ ${nf(R.wav,0)} mm`])}
+  else util.push(["Largura",Infinity,"não cabe"]);
+  if(R.amax)util.push(["A<sub>s,máx</sub> = 0,04 A<sub>c</sub>",p.As/R.amax,`${nf(p.As,2)} ≤ ${nf(R.amax,1)} cm²`]);
+  const kv=[["A<sub>s,prov</sub>","cm²",p.As,2],["A<sub>s,req</sub>","cm²",R.As,2],["Excesso","%",R.As?100*(p.As/R.As-1):null,0],["Nº de varões","",p.n,0],["Camadas","",p.lay?p.lay.L.length:null,0],["Dist. livre","mm",clear,0],["s<sub>mín</sub> (EC2 8.2)","mm",p.lay?p.lay.s:smin(Math.max(...p.list),R),0],["Peso","kg/m",p.kg,2]];
+  kv.push(...ankKV(Math.max(...p.list)));return card({svg:svgViga(p,R),p,best,name:p.lbl,sub:`${nf(p.As,2)} cm² · ${p.lay?p.lay.L.length+" camada"+(p.lay.L.length>1?"s":""):"não cabe"} · ${nf(p.kg,2)} kg/m`,util,kv,alts:S.rank,altTxt:a=>`${a.lbl} · ${nf(a.As,2)} cm²`,notes:ankBtn(Math.max(...p.list))+(p.lay&&p.lay.L.length>1?`<p class="fnote">Com 2 camadas a altura útil diminui cerca de ${nf(Math.max(...p.list)/2+p.lay.s/2,0)} mm; confirme A<sub>s,req</sub> com o d real.</p>`:"")});
+}
+function svgViga(p,R){
+  const b=R.b||300,h=R.h||500,c=R.c,dw=R.dw,S=150/Math.max(b,h),x0=100-b*S/2,y0=100-h*S/2,X=x=>x0+x*S,Y=y=>y0+y*S;
+  let g=`<rect x="${X(0)}" y="${Y(0)}" width="${b*S}" height="${h*S}" fill="var(--conc)" stroke="var(--ink)" stroke-width="1"/>`;
+  const ci=c+dw/2;g+=`<rect x="${X(ci)}" y="${Y(ci)}" width="${(b-2*ci)*S}" height="${(h-2*ci)*S}" rx="${Math.max(1,2*dw*S)}" fill="none" stroke="var(--steel)" stroke-width="${Math.max(1,dw*S)}"/>`;
+  const top=10;[c+dw+top/2,b-c-dw-top/2].forEach(x=>g+=`<circle cx="${X(x)}" cy="${Y(c+dw+top/2)}" r="${Math.max(1.2,top/2*S)}" fill="none" stroke="var(--muted)" stroke-width="1"/>`);
+  if(p.lay){let y=h-c-dw;p.lay.L.forEach((L,k)=>{const dm=Math.max(...L);y-=k?p.lay.s+dm:dm/2;const arr=arrange(L);const x1=c+dw+arr[0]/2,x2=b-c-dw-arr[arr.length-1]/2;
+    arr.forEach((d,i)=>{const x=arr.length===1?b/2:x1+(x2-x1)*i/(arr.length-1);g+=`<circle cx="${X(x).toFixed(2)}" cy="${Y(y).toFixed(2)}" r="${Math.max(1.4,d/2*S).toFixed(2)}" fill="var(--oxide)"/>`});if(k===0)y-=0});}
+  g+=dims(X(0),Y(0),b*S,h*S,b,h);
+  return `<svg viewBox="-14 -10 224 224" role="img" aria-label="Secção da viga com ${esc(p.lbl)}">${g}</svg>`}
+function arrange(L){const s=[...L].sort((a,b)=>b-a),o=new Array(s.length);let i=0,j=s.length-1;s.forEach((d,k)=>{if(k%2===0)o[i++]=d;else o[j--]=d});return o}
+
+// ================= LAJES E SAPATAS =================
+function reqLaje(){
+  const h=num("l_h"),c=num("l_c")??25,M=num("l_med");const d=num("l_d")??(h?h-c-6:null);
+  let As=num("l_as"),out=[];
+  if(M!=null&&d){const f=flex(M,1000,d);if(f.As==null)out.push(line(`μ = ${nf(f.mu,3)} — espessura insuficiente`,1));else{out.push(line(`d = ${nf(d,0)} mm · μ = ${nf(f.mu,3)} · x/d = ${nf(f.xd,2)}`,f.xd>0.45));out.push(line(`A<sub>s,req</sub> = ${nf(f.As,2)} cm²/m`));As=Math.max(As??0,f.As)}}
+  if($("l_min").checked&&d){const a=asmin(1000,d);out.push(line(`A<sub>s,min</sub> = ${nf(a,2)} cm²/m`));if(As!=null)As=Math.max(As,a)}
+  const p=$("l_dir").value==="p",z=$("l_zone").value==="m";
+  const auto=h?(p?(z?Math.min(2*h,250):Math.min(3*h,400)):(z?Math.min(3*h,400):Math.min(3.5*h,450))):null;
+  $("l_smax").placeholder=auto?"auto "+nf(auto,0):"auto";if(auto)out.push(line(`s<sub>máx</sub> = ${nf(auto,0)} mm`));
+  $("l_out").innerHTML=out.join("");
+  return{As,h,c,d,smax:num("l_smax")??auto,smin:num("l_smin")??0}}
+function lCand(d,s,R){const As=ASM(d,s);const fails=[];if(R.As!=null&&As<R.As-1e-9)fails.push("As");if(R.smax&&s>R.smax)fails.push("smax");if(s<R.smin)fails.push("smin");if(s-d<20)fails.push("smin");
+  return{id:`l|${d}|${s}`,d,s,As,fails,ok:!fails.length,kg:KG*As,lbl:`Ø${d}//${fs(s)}`}}
+function solveLaje(){const R=reqLaje();const ds=[...st.d.laje].sort((a,b)=>a-b);const grid=ds.map(d=>({d,row:SPL.map(s=>lCand(d,s,R))}));const all=grid.flatMap(g=>g.row);
+  const crit=$("l_crit").value;const rank=all.filter(c=>c.ok).sort(crit==="s"?(a,b)=>b.s-a.s||a.As-b.As:(a,b)=>a.As-b.As||b.s-a.s);return{R,grid,all,rank,any:R.As!=null}}
+function tableLaje(S,best,pick){
+  $("tbl").className="g";
+  $("thead").innerHTML=`<tr><th>Ø (mm)</th>${SPL.map(s=>`<th>${fs(s)}</th>`).join("")}</tr>`;
+  $("tbody").innerHTML=S.grid.map(({d,row})=>`<tr><td>Ø${d}</td>${row.map(c=>`<td class="${[c.ok?"okc":"",c.fails.some(f=>f!=="As")?"nf":"",best&&c.id===best.id?"best":"",pick&&c.id===pick.id&&(!best||c.id!==best.id)?"pick":""].join(" ")}" data-id="${c.id}" tabindex="0" title="${c.lbl}">${nf(c.As,2)}</td>`).join("")}</tr>`).join("")||`<tr><td>Escolha pelo menos um diâmetro.</td></tr>`;
+  $("count").innerHTML=`Área de armadura A<sub>s</sub> (cm²/m) por <b>afastamento</b> (m)${S.any?` · <b>${S.rank.length}</b> soluções cumprem`:""}`;
+}
+function cardLaje(p,best,S){const R=S.R;
+  if(!p)return empty(S.any?"Nenhuma solução cumpre":"Sem requisitos",S.any?"Nenhum diâmetro escolhido satisfaz a área com afastamento dentro dos limites. Junte diâmetros maiores ou reveja s<sub>máx</sub>.":"Indique A<sub>s</sub> por metro ou o momento M<sub>Ed</sub> e a espessura.");
+  const util=[];if(R.As!=null)util.push(["A<sub>s</sub>",R.As/p.As,`${nf(p.As,2)} ≥ ${nf(R.As,2)} cm²/m`]);if(R.smax)util.push(["Afastamento",p.s/R.smax,`${p.s} ≤ ${nf(R.smax,0)} mm`]);
+  const kv=[["A<sub>s,prov</sub>","cm²/m",p.As,2],["A<sub>s,req</sub>","cm²/m",R.As,2],["Excesso","%",R.As?100*(p.As/R.As-1):null,0],["Varões por metro","un/m",1000/p.s,1],["Afastamento","mm",p.s,0],["Dist. livre","mm",p.s-p.d,0],["Peso","kg/m²",p.kg,2]];
+  kv.push(...ankKV(p.d));return card({svg:svgLaje(p,R),p,best,name:p.lbl,sub:`${nf(p.As,2)} cm²/m · ${nf(p.kg,2)} kg/m² numa direção`,util,kv,alts:S.rank,altTxt:a=>`${a.lbl} · ${nf(a.As,2)}`,notes:ankBtn(p.d)})}
+function svgLaje(p,R){const W=1000,h=R.h||200,S=180/W,hh=Math.max(h*S,24),y0=100-hh/2,c=R.c||25;
+  let g=`<rect x="10" y="${y0}" width="180" height="${hh}" fill="var(--conc)" stroke="var(--ink)" stroke-width="1"/>`;
+  const r=Math.max(1.5,p.d/2*S*1.4),yb=y0+hh-Math.max(c*S,4)-r;
+  for(let x=p.s/2;x<W;x+=p.s)g+=`<circle cx="${(10+x*S).toFixed(2)}" cy="${yb.toFixed(2)}" r="${r.toFixed(2)}" fill="var(--oxide)"/>`;
+  const xa=10+p.s/2*S,xb=xa+p.s*S;
+  g+=`<g stroke="var(--muted)" stroke-width=".8" fill="var(--muted)" font-family="IBM Plex Mono,monospace" font-size="10"><line x1="10" y1="${y0+hh+12}" x2="190" y2="${y0+hh+12}"/><text x="100" y="${y0+hh+24}" text-anchor="middle" stroke="none">1,00 m</text>
+  <line x1="${xa}" y1="${y0-10}" x2="${xb}" y2="${y0-10}"/><line x1="${xa}" y1="${y0-14}" x2="${xa}" y2="${y0-6}"/><line x1="${xb}" y1="${y0-14}" x2="${xb}" y2="${y0-6}"/><text x="${(xa+xb)/2}" y="${y0-16}" text-anchor="middle" stroke="none">s = ${fs(p.s)}</text>
+  <text x="196" y="${y0+hh/2+3}" stroke="none">${nf(h,0)}</text></g>`;
+  return `<svg viewBox="0 0 210 200" role="img" aria-label="Faixa de laje com ${esc(p.lbl)}">${g}</svg>`}
+
+// ================= ESTRIBOS =================
+function reqEst(){
+  const b=num("e_b"),h=num("e_h"),c=num("e_c")??30,V=num("e_ved"),cot=Math.min(2.5,Math.max(1,num("e_cot")??2));const d=num("e_d")??(h?h-c-8-8:null);const m=mat();
+  let As=num("e_as"),out=[];const z=d?0.9*d:null;const fywd=m.fyd;
+  if(V!=null&&z){const a=V*1e3/(z*fywd*cot)*10;out.push(line(`d = ${nf(d,0)} mm · z = ${nf(z,0)} mm`));out.push(line(`A<sub>sw</sub>/s<sub>,req</sub> = ${nf(a,2)} cm²/m`));As=Math.max(As??0,a);
+    if(b){const nu=0.6*(1-m.fck/250);const tan=1/cot;const vr=b*z*nu*m.fcd/(cot+tan)/1e3;out.push(line(`V<sub>Rd,máx</sub> = ${nf(vr,0)} kN${V>vr?" < V<sub>Ed</sub>: aumente b<sub>w</sub>, h ou reduza cot θ":""}`,V>vr))}}
+  if($("e_min").checked&&b){const a=0.08*Math.sqrt(m.fck)/m.fyk*b*10;out.push(line(`ρ<sub>w,min</sub> → ${nf(a,2)} cm²/m`));if(As!=null)As=Math.max(As,a)}
+  const auto=d?0.75*d:null;$("e_smax").placeholder=auto?"auto "+nf(auto,0):"auto";if(auto)out.push(line(`s<sub>l,máx</sub> = 0,75d = ${nf(auto,0)} mm`));
+  $("e_out").innerHTML=out.join("");
+  return{As,b,h,c,d,smax:num("e_smax")??auto,smin:num("e_smin")??0}}
+function eCand(d,r,s,R){const As=r*ASM(d,s);const fails=[];if(R.As!=null&&As<R.As-1e-9)fails.push("As");if(R.smax&&s>R.smax)fails.push("smax");if(s<R.smin)fails.push("smin");
+  return{id:`e|${d}|${r}|${s}`,d,r,s,As,fails,ok:!fails.length,lbl:`Ø${d}//${fs(s)}`}}
+function solveEst(){const R=reqEst();const ds=[...st.d.est].sort((a,b)=>a-b),rs=[...st.ram].sort();const grid=[];
+  for(const d of ds)rs.forEach((r,k)=>grid.push({d,r,first:k===0,row:SPE.map(s=>eCand(d,r,s,R))}));const all=grid.flatMap(g=>g.row);
+  const crit=$("e_crit").value;const rank=all.filter(c=>c.ok).sort(crit==="s"?(a,b)=>b.s-a.s||a.r-b.r||a.As-b.As:(a,b)=>a.As-b.As||a.r-b.r||b.s-a.s);return{R,grid,all,rank,any:R.As!=null}}
+function tableEst(S,best,pick){
+  $("tbl").className="g";
+  $("thead").innerHTML=`<tr><th>Ø · ramos</th>${SPE.map(s=>`<th>${fs(s)}</th>`).join("")}</tr>`;
+  $("tbody").innerHTML=S.grid.map(({d,r,first,row})=>`<tr class="${first?"grp":""}"><td>Ø${d} <span class="hint">· ${r} ramos</span></td>${row.map(c=>`<td class="${[c.ok?"okc":"",c.fails.some(f=>f!=="As")?"nf":"",best&&c.id===best.id?"best":"",pick&&c.id===pick.id&&(!best||c.id!==best.id)?"pick":""].join(" ")}" data-id="${c.id}" tabindex="0" title="${c.lbl} (${c.r} ramos)">${nf(c.As,2)}</td>`).join("")}</tr>`).join("")||`<tr><td>Escolha pelo menos um diâmetro e um número de ramos.</td></tr>`;
+  $("count").innerHTML=`Armadura transversal A<sub>sw</sub>/s (cm²/m) por <b>espaçamento</b> (m)${S.any?` · <b>${S.rank.length}</b> soluções cumprem`:""}`;
+}
+function cardEst(p,best,S){const R=S.R;
+  if(!p)return empty(S.any?"Nenhuma solução cumpre":"Sem requisitos",S.any?"Nenhuma combinação de diâmetro, ramos e espaçamento satisfaz A<sub>sw</sub>/s. Junte diâmetros ou ramos, ou reveja s<sub>máx</sub>.":"Indique A<sub>sw</sub>/s ou o esforço V<sub>Ed</sub> e a secção.");
+  const util=[];if(R.As!=null)util.push(["A<sub>sw</sub>/s",R.As/p.As,`${nf(p.As,2)} ≥ ${nf(R.As,2)} cm²/m`]);if(R.smax)util.push(["Espaçamento",p.s/R.smax,`${p.s} ≤ ${nf(R.smax,0)} mm`]);
+  const z=R.d?0.9*R.d:null,m=mat();const VRs=z?p.As/10*z*m.fyd*Math.min(2.5,Math.max(1,num("e_cot")??2))/1e3:null;
+  const kv=[["A<sub>sw</sub>/s prov","cm²/m",p.As,2],["A<sub>sw</sub>/s req","cm²/m",R.As,2],["A<sub>sw</sub> por cinta","cm²",p.r*AB(p.d),2],["Ramos","",p.r,0],["Espaçamento","mm",p.s,0],["V<sub>Rd,s</sub>","kN",VRs,0],["ρ<sub>w</sub>","‰",R.b?p.As/10/R.b*1000:null,2]];
+  return card({svg:svgEst(p,R),p,best,name:`${p.lbl}`,sub:`${p.r} ramos · ${nf(p.As,2)} cm²/m${VRs?` · V<sub>Rd,s</sub> = ${nf(VRs,0)} kN`:""}`,util,kv,alts:S.rank,altTxt:a=>`${a.lbl} ${a.r}r · ${nf(a.As,2)}`})}
+function svgEst(p,R){const b=R.b||300,h=R.h||500,c=R.c||30,S=150/Math.max(b,h),x0=100-b*S/2,y0=100-h*S/2,X=x=>x0+x*S,Y=y=>y0+y*S,sw=Math.max(1.2,p.d*S);
+  let g=`<rect x="${X(0)}" y="${Y(0)}" width="${b*S}" height="${h*S}" fill="var(--conc)" stroke="var(--ink)" stroke-width="1"/>`;
+  const ci=c+p.d/2,st_=(a,bb)=>`<rect x="${X(a)}" y="${Y(ci)}" width="${(bb-a)*S}" height="${(h-2*ci)*S}" rx="${Math.max(1,2*p.d*S)}" fill="none" stroke="var(--oxide)" stroke-width="${sw}"/>`;
+  if(p.r===4){const w=b-2*ci;g+=st_(ci,ci+w*0.62)+st_(b-ci-w*0.62,b-ci)}else g+=st_(ci,b-ci);
+  if(p.r===3)g+=`<line x1="${X(b/2)}" y1="${Y(ci)}" x2="${X(b/2)}" y2="${Y(h-ci)}" stroke="var(--oxide)" stroke-width="${sw}"/>`;
+  const bl=16,ys=[c+p.d+bl/2,h-c-p.d-bl/2],xs=p.r===2?[c+p.d+bl/2,b-c-p.d-bl/2]:[c+p.d+bl/2,b/2,b-c-p.d-bl/2];
+  if(p.r===4){const w=b-2*ci;xs.splice(1,1,ci+w*0.62-p.d/2-bl/2,b-ci-w*0.62+p.d/2+bl/2)}
+  ys.forEach(y=>xs.forEach(x=>g+=`<circle cx="${X(x).toFixed(2)}" cy="${Y(y).toFixed(2)}" r="${Math.max(1.4,bl/2*S).toFixed(2)}" fill="var(--steel)"/>`));
+  g+=dims(X(0),Y(0),b*S,h*S,b,h);
+  return `<svg viewBox="-14 -10 224 224" role="img" aria-label="Secção com estribos ${esc(p.lbl)}">${g}</svg>`}
+
+// ================= MALHAS ELECTROSSOLDADAS =================
+let MESH=[];
+function rebuildMesh(){MESH=[];st.sources.forEach(s=>{if(st.off.has(s.id))return;s.meshes.forEach((m,i)=>{m.uid=s.id+"|"+i;m.src=s;m.key=norm(m.n);MESH.push(m)})});drawCats()}
+function reqMalha(){
+  const h=num("m_h"),c=num("m_c")??25,M=num("m_med");const d=num("m_d")??(h?h-c-4:null);
+  let asl=num("m_asl"),ast=num("m_ast"),out=[];
+  if(M!=null&&d){const f=flex(M,1000,d);if(f.As==null)out.push(line(`μ = ${nf(f.mu,3)} — espessura insuficiente`,1));else{out.push(line(`d = ${nf(d,0)} mm · μ = ${nf(f.mu,3)}`));out.push(line(`A<sub>s,req</sub> = ${nf(f.As,2)} cm²/m`));asl=Math.max(asl??0,f.As)}}
+  if($("m_min").checked&&d){const a=asmin(1000,d);out.push(line(`A<sub>s,min</sub> = ${nf(a,2)} cm²/m`));if(asl!=null)asl=Math.max(asl,a)}
+  if($("m_20").checked&&asl!=null){ast=Math.max(ast??0,0.2*asl);out.push(line(`A<sub>s,trans</sub> ≥ ${nf(ast,2)} cm²/m`))}
+  const aL=h?Math.min(3*h,400):null,aT=h?Math.min(3.5*h,450):null;
+  $("m_smax").placeholder=aL?"auto "+nf(aL,0):"auto";$("m_stmax").placeholder=aT?"auto "+nf(aT,0):"auto";
+  $("m_out").innerHTML=out.join("");
+  return{asl,ast,h,smax:num("m_smax")??aL,stmax:num("m_stmax")??aT,wmax:num("m_wmax")}}
+function mCheck(m,R){const rows=[],fails=[];let u=0;
+  const mn=(k,lab,v,req,unit)=>{if(req==null)return;const x=req/v;rows.push([lab,x,`${nf(v,2)} ≥ ${nf(req,2)} ${unit}`]);u=Math.max(u,x);if(x>1+1e-9)fails.push(k)};
+  const mx=(k,lab,v,lim,unit,d)=>{if(lim==null)return;const x=v/lim;rows.push([lab,x,`${nf(v,d)} ≤ ${nf(lim,d)} ${unit}`]);if(x>1+1e-9)fails.push(k)};
+  mn("aL","A<sub>s,long</sub>",m.aL,R.asl,"cm²/m");mn("aT","A<sub>s,trans</sub>",m.aT,R.ast,"cm²/m");mx("sL","s<sub>long</sub>",m.sL,R.smax,"mm",0);mx("sT","s<sub>trans</sub>",m.sT,R.stmax,"mm",0);mx("w","Peso",m.w,R.wmax,"kg/m²",2);
+  return{ok:!fails.length,fails,u,rows}}
+function solveMalha(){const R=reqMalha();const q=norm($("m_q").value);
+  const pool=MESH.filter(m=>q?m.key.includes(q):st.surf.has(m.surf||""));pool.forEach(m=>m.c=mCheck(m,R));
+  const any=R.asl!=null||R.ast!=null;const crit=$("m_crit").value;
+  const rank=pool.filter(m=>m.c.ok&&!m.warn).sort(crit==="u"?(a,b)=>b.c.u-a.c.u||a.w-b.w:(a,b)=>a.w-b.w||b.c.u-a.c.u);
+  let best=any?rank[0]||null:null;if(q&&!any)best=pool.find(m=>m.key===q)||pool[0]||null;
+  return{R,pool,all:pool,rank,any,best,q}}
+const MCOLS=[["n","Malha",""],["dL","Ø long.","mm"],["sL","s long.","mm"],["dT","Ø trans.","mm"],["sT","s trans.","mm"],["aL","A<sub>s,long</sub>","cm²/m"],["aT","A<sub>s,trans</sub>","cm²/m"],["w","Peso","kg/m²"]];
+function tableMalha(S,best,pick){
+  $("tbl").className="l";
+  $("thead").innerHTML="<tr>"+MCOLS.map(([k,l,u])=>`<th data-k="${k}" class="${st.sort===k?"sorted":""}">${l}${st.sort===k?(st.dir>0?" ↑":" ↓"):""}<small>${u||"&nbsp;"}</small></th>`).join("")+"</tr>";
+  document.querySelectorAll("#tbl th").forEach(th=>th.onclick=()=>{const k=th.dataset.k;if(st.sort===k)st.dir*=-1;else{st.sort=k;st.dir=1}render()});
+  const k=st.sort,dir=st.dir;let rows=[...S.pool].sort((a,b)=>k==="n"?(a.src.name.localeCompare(b.src.name)||a.w-b.w)*dir:((a[k]-b[k])||(a.w-b.w))*dir);
+  if($("onlyOk").checked)rows=rows.filter(m=>m.c.ok);
+  const multi=st.sources.filter(s=>!st.off.has(s.id)).length>1,SL={lisa:"lisa",nerv:"nerv.",["" ]:""};
+  const fk={aL:"aL",aT:"aT",sL:"sL",sT:"sT",w:"w"};
+  $("tbody").innerHTML=rows.map(m=>{const cls=[!m.c.ok&&S.any?"fail":"",best&&m.uid===best.uid?"best":"",pick&&pick.uid===m.uid&&(!best||m.uid!==best.uid)?"pick":""].join(" ");
+    return `<tr class="${cls}" data-id="${m.uid}">`+MCOLS.map(([c])=>c==="n"?`<td>${esc(m.n)}<span class="surf">${SL[m.surf||""]}</span>${m.warn?'<span class="avoid" title="Área ou peso incoerentes com Ø e afastamento no catálogo">rever</span>':""}${multi?` <span class="hint">· ${esc(m.src.name)}</span>`:""}</td>`:`<td class="${m.c.fails.includes(fk[c])?"x":""}${(m.calc||[]).includes(c)?" c":""}">${nf(m[c],c[0]==="s"?0:c[0]==="d"?1:2)}</td>`).join("")+"</tr>"}).join("")||`<tr><td colspan="8">${MESH.length?"Nenhuma malha para os filtros escolhidos.":"Sem catálogos ativos."}</td></tr>`;
+  $("count").innerHTML=S.pool.length?`<b>${S.rank.length}</b> de ${S.pool.length} malhas cumprem${S.any?"":" (sem requisitos definidos)"}`:"Sem malhas";
+}
+function cardMalha(p,best,S){const R=S.R;
+  if(!p)return empty(!MESH.length?"Sem catálogo":S.any?"Nenhuma malha cumpre":"Sem requisitos",!MESH.length?"Ative um catálogo de referência ou importe o PDF de um fornecedor.":S.any?"Nenhuma malha dos catálogos ativos satisfaz todos os requisitos. Considere varões soltos (separador Lajes e sapatas) ou uma malha dupla.":"Indique A<sub>s,long</sub>, o momento M<sub>Ed</sub> ou procure uma malha pelo nome.");
+  const c=mCheck(p,R);
+  const kv=[["Ø long.","mm",p.dL,1],["s long.","mm",p.sL,0],["Ø trans.","mm",p.dT,1],["s trans.","mm",p.sT,0],["A<sub>s,long</sub>","cm²/m",p.aL,2,"aL"],["A<sub>s,trans</sub>","cm²/m",p.aT,2,"aT"],["Peso","kg/m²",p.w,2,"w"],["Painel 6,00×2,40","kg",p.w*14.4,1]];
+  const SN={lisa:"Superfície lisa",nerv:"Superfície nervurada","":"Superfície não indicada"};
+  return card({svg:svgMalha(p),p,best,name:p.n,sub:`${SN[p.surf||""]} · ${esc(p.src.name)}${p.page?", pág. "+p.page:""}`,util:c.rows,kv,alts:S.rank,altTxt:a=>`${a.n} · ${nf(a.w,2)} kg/m²`,uidKey:"uid",
+    notes:(p.warn?`<p class="fnote bad">A área ou o peso indicados no catálogo não batem com o diâmetro e o afastamento (A<sub>s</sub> = π·Ø²/4·1000/s, peso = 0,785·ΣA<sub>s</sub>). Esta malha não é proposta como melhor; confirme com o fornecedor.</p>`:"")+((p.calc||[]).length?`<p class="fnote">Os valores a azul-aço não constam do catálogo e foram calculados a partir do diâmetro e do afastamento.</p>`:""),calcKeys:p.calc||[]})}
+function svgMalha(p){const W=600,S=180/W,o=10;let g=`<rect x="${o}" y="${o}" width="180" height="180" fill="var(--conc)"/>`;
+  const wl=Math.max(1,p.dL*S*1.6),wt=Math.max(1,p.dT*S*1.6);
+  for(let x=p.sT/2;x<W;x+=p.sT)g+=`<line x1="${(o+x*S).toFixed(2)}" y1="${o}" x2="${(o+x*S).toFixed(2)}" y2="${o+180}" stroke="var(--steel)" stroke-width="${wt.toFixed(2)}"/>`;
+  for(let y=p.sL/2;y<W;y+=p.sL)g+=`<line x1="${o}" y1="${(o+y*S).toFixed(2)}" x2="${o+180}" y2="${(o+y*S).toFixed(2)}" stroke="var(--oxide)" stroke-width="${wl.toFixed(2)}"/>`;
+  const y1=o+p.sL/2*S,y2=y1+p.sL*S,x1=o+p.sT/2*S,x2=x1+p.sT*S;
+  g+=`<g stroke="var(--muted)" stroke-width=".8" fill="var(--muted)" font-family="IBM Plex Mono,monospace" font-size="9.5">
+  <line x1="${o+186}" y1="${y1}" x2="${o+186}" y2="${y2}"/><text x="${o+191}" y="${(y1+y2)/2+3}" stroke="none">${p.sL}</text>
+  <line x1="${x1}" y1="${o+188}" x2="${x2}" y2="${o+188}"/><text x="${(x1+x2)/2}" y="${o+200}" text-anchor="middle" stroke="none">${p.sT}</text></g>
+  <text x="${o}" y="${o-2}" font-size="9" fill="var(--oxide)" font-family="IBM Plex Mono,monospace">long. Ø${nf(p.dL,1)}</text><text x="${o+180}" y="${o-2}" text-anchor="end" font-size="9" fill="var(--steel)" font-family="IBM Plex Mono,monospace">trans. Ø${nf(p.dT,1)}</text>`;
+  return `<svg viewBox="0 -4 222 218" role="img" aria-label="Malha ${esc(p.n)} em planta (janela de 0,60 × 0,60 m)">${g}</svg>`}
+
+// ---------- catálogos: lista, importação ----------
+function drawCats(){
+  $("cats").innerHTML=st.sources.map(s=>`<div class="cat${s.ref?" ref":""}${st.off.has(s.id)?" off":""}"><input type="checkbox" id="cat_${s.id}" data-id="${s.id}" ${st.off.has(s.id)?"":"checked"} aria-label="Usar ${esc(s.name)}"><label class="nm" for="cat_${s.id}" title="${esc(s.name)}">${esc(s.name)}</label><span class="meta">${s.ref?"referência · ":s.pages+" pág. · "}${s.meshes.length} malhas</span><button class="x" data-id="${s.id}" aria-label="Remover ${esc(s.name)}">×</button></div>`).join("")||`<p class="msg">Nenhum catálogo carregado.</p>`;
+  $("cats").querySelectorAll("input[data-id]").forEach(c=>c.onchange=()=>{c.checked?st.off.delete(c.dataset.id):st.off.add(c.dataset.id);st.pick=null;rebuildMesh();save();run()});
+  $("cats").querySelectorAll(".x").forEach(b=>b.onclick=()=>{st.sources=st.sources.filter(s=>s.id!==b.dataset.id);st.pick=null;rebuildMesh();save();run()});
+}
+$("resetCats").onclick=()=>{st.sources=[...REF,...st.sources.filter(s=>!s.ref)];st.off=new Set();rebuildMesh();save();run()};
+let pdfReady=false;
+try{if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";pdfReady=true}}catch(e){}
+const setMsg=(t,err)=>{$("msg").textContent=t;$("msg").className="msg"+(err?" err":"")};
+async function readPdf(file){
+  const doc=await pdfjsLib.getDocument({data:new Uint8Array(await file.arrayBuffer()),disableFontFace:true,isEvalSupported:false}).promise;const pages=[];
+  for(let i=1;i<=doc.numPages;i++){const tc=await (await doc.getPage(i)).getTextContent();
+    pages.push(tc.items.filter(it=>it.str!=null).map(it=>({s:it.str,x:it.transform[4],y:it.transform[5],w:it.width,fs:Math.hypot(it.transform[2],it.transform[3])||8})));
+    $("prog").style.width=(100*i/doc.numPages)+"%";if(i%5===0)await new Promise(r=>setTimeout(r))}
+  return pages}
+async function importFiles(files){
+  files=[...files].filter(f=>/pdf$/i.test(f.type)||/\.pdf$/i.test(f.name));
+  if(!files.length){setMsg("Escolha um ficheiro PDF.",true);return}
+  if(!pdfReady){setMsg("Não foi possível carregar o leitor de PDF. Verifique a ligação à internet e recarregue a página.",true);return}
+  $("progBox").hidden=false;const notes=[];let err=false;
+  for(const f of files){setMsg(`A ler ${f.name}…`);$("prog").style.width="0";
+    try{const pages=await readPdf(f);const chars=pages.reduce((n,p)=>n+p.reduce((m,i)=>m+i.s.length,0),0);
+      if(chars<50){notes.push(`${f.name}: sem texto selecionável (provavelmente digitalizado). Passe-o por OCR ou introduza a tabela à mão.`);err=true;continue}
+      const r=MeshParser.meshesFromPages(pages);
+      if(!r.meshes.length){notes.push(`${f.name}: não foram encontradas tabelas de malhas. O leitor procura linhas com a designação (AR50, NR 80, CQ 60…) seguida de diâmetros, afastamentos e peso ou áreas.`);err=true;continue}
+      const seen=new Set();const meshes=r.meshes.filter(m=>{const k=norm(m.n)+m.surf+m.dL+m.sL+m.dT+m.sT;if(seen.has(k))return false;seen.add(k);return true});
+      const src={id:"c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:f.name.replace(/\.pdf$/i,""),pages:pages.length,meshes};
+      st.sources.push(src);const w=meshes.filter(m=>m.warn).length,calc=meshes.filter(m=>m.calc.length).length;
+      const dup=r.rows-meshes.length,wk=meshes.find(m=>m.wk&&Math.abs(m.wk-1)>0.005);
+      notes.push(`${src.name}: ${meshes.length} malhas em ${r.tables.length} tabela${r.tables.length>1?"s":""}.`+(dup>0?` ${dup} linha${dup>1?"s":""} repetida${dup>1?"s":""} (rolo / painel) agrupada${dup>1?"s":""}.`:"")+(wk?` Peso do catálogo ${nf(100*(wk.wk-1),1)} % acima de 0,785·ΣA<sub>s</sub> (fator do fabricante, tido em conta).`.replace(/<\/?sub>/g,""):"")+(calc?` ${calc} sem área ou peso no catálogo (calculados).`:"")+(w?` ${w} com dados incoerentes, assinaladas “rever”.`:""));
+    }catch(e){console.error(e);notes.push(`${f.name}: erro na leitura (${e.message||e}).`);err=true}}
+  $("progBox").hidden=true;st.pick=null;setMsg(notes.join(" "),err);rebuildMesh();save();run()}
+$("file").onchange=e=>{importFiles(e.target.files);e.target.value=""};
+const drop=$("drop");
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over")}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over")}));
+drop.addEventListener("drop",e=>importFiles(e.dataTransfer.files));
+
+// ================= RECOBRIMENTOS E DURABILIDADE (EC2 4.4 + EN 206) =================
+// EN 206 Quadro 1 (descrição, exemplos)
+const EXP=[
+ ["Sem risco",[["X0","Muito seco (betão armado)","Interior de edifícios com humidade do ar muito baixa"]]],
+ ["Carbonatação",[["XC1","Seco ou permanentemente húmido","Interior com baixa humidade do ar; betão permanentemente submerso"],["XC2","Húmido, raramente seco","Superfícies em contacto prolongado com água; muitas fundações"],["XC3","Moderadamente húmido","Interior com humidade moderada ou elevada; exterior protegido da chuva"],["XC4","Ciclicamente húmido e seco","Superfícies em contacto com a água, fora da classe XC2"]]],
+ ["Cloretos não marinhos",[["XD1","Moderadamente húmido","Superfícies expostas a cloretos transportados pelo ar"],["XD2","Húmido, raramente seco","Piscinas; betão exposto a águas industriais com cloretos"],["XD3","Ciclicamente húmido e seco","Pontes com salpicos de cloretos; pavimentos; parques de estacionamento"]]],
+ ["Água do mar",[["XS1","Ar com sais marinhos, sem contacto direto","Estruturas na zona costeira ou na sua proximidade"],["XS2","Submersão permanente","Partes de estruturas marítimas"],["XS3","Zonas de marés, rebentação ou salpicos","Partes de estruturas marítimas"]]],
+ ["Gelo/degelo",[["XF1","Moderadamente saturado, sem descongelantes","Superfícies verticais expostas à chuva e ao gelo"],["XF2","Moderadamente saturado, com descongelantes","Superfícies verticais de estruturas rodoviárias"],["XF3","Fortemente saturado, sem descongelantes","Superfícies horizontais expostas à chuva e ao gelo"],["XF4","Fortemente saturado, com descongelantes","Tabuleiros de pontes; zona de rebentação com gelo"]]],
+ ["Ataque químico",[["XA1","Ligeiramente agressivo (Quadro 2)","Solos naturais e águas subterrâneas"],["XA2","Moderadamente agressivo (Quadro 2)","Solos naturais e águas subterrâneas"],["XA3","Fortemente agressivo (Quadro 2)","Solos naturais e águas subterrâneas"]]]];
+const EXPD={};EXP.forEach(([g,L])=>L.forEach(([c,d,e])=>EXPD[c]={g,d,e}));
+// NP EN 206-1 Quadro F.1: [A/C máx, f_ck mínimo, cimento mín. (kg/m³), ar mín. (%), outro]
+const F1={X0:[null,12,null],XC1:[.65,20,260],XC2:[.60,25,280],XC3:[.55,30,280],XC4:[.50,30,300],XS1:[.50,30,300],XS2:[.45,35,320],XS3:[.45,35,340],XD1:[.55,30,300],XD2:[.55,30,300],XD3:[.45,35,320],XF1:[.55,30,300,0,"gelo"],XF2:[.55,25,300,4,"gelo"],XF3:[.50,30,320,4,"gelo"],XF4:[.45,30,340,4,"gelo"],XA1:[.55,30,300],XA2:[.50,30,320,0,"sulf"],XA3:[.45,35,360,0,"sulf"]};
+const CLS={12:"C12/15",16:"C16/20",20:"C20/25",25:"C25/30",30:"C30/37",35:"C35/45",40:"C40/50",45:"C45/55",50:"C50/60"};
+// EC2 Quadro 4.4N (armaduras ordinárias) e Quadro 4.3N (limite de resistência para reduzir uma classe)
+const RCOLS=["X0","XC1","XC2/XC3","XC4","XD1/XS1","XD2/XS2","XD3/XS3"];
+const COLI={X0:0,XC1:1,XC2:2,XC3:2,XC4:3,XD1:4,XS1:4,XD2:5,XS2:5,XD3:6,XS3:6};
+const THR={X0:30,XC1:30,XC2:35,XC3:35,XC4:40,XD1:40,XD2:40,XS1:40,XD3:45,XS2:45,XS3:45};
+const CMIN=[[10,10,10,15,20,25,30],[10,10,15,20,25,30,35],[10,10,20,25,30,35,40],[10,15,25,30,35,40,45],[15,20,30,35,40,45,50],[20,25,35,40,45,50,55]];
+const up5=v=>Math.ceil(v/5-1e-9)*5,up10=v=>Math.ceil(v/10-1e-9)*10;
+const clamp=(v,a=0.7,b=1)=>Math.min(b,Math.max(a,v));
+
+function drawExp(){
+  $("c_exp").innerHTML=EXP.map(([g,L])=>`<div class="eg"><span>${g}</span><div class="chips">${L.map(([c,d])=>`<button class="chip" data-x="${c}" aria-pressed="${st.exp.has(c)}" title="${esc(c+": "+d)}">${c}</button>`).join("")}</div></div>`).join("");
+  $("c_exp").querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>{const c=b.dataset.x;
+    if(st.exp.has(c))st.exp.delete(c);else{
+      // dentro da mesma família só uma classe faz sentido
+      const fam=c.replace(/\d$/,"");[...st.exp].forEach(x=>{if(x.replace(/\d$/,"")===fam||(c==="X0"&&/^X[CDS]/.test(x))||(/^X[CDS]/.test(c)&&x==="X0"))st.exp.delete(x)});st.exp.add(c)}
+    drawExp();$("exNote").hidden=true;run()});
+}
+$("xa_out").addEventListener("click",e=>{const b=e.target.closest("[data-xa]");if(!b)return;[...st.exp].forEach(x=>{if(/^XA/.test(x))st.exp.delete(x)});st.exp.add(b.dataset.xa);drawExp();run()});
+$("r_none").onclick=()=>{st.exp.clear();drawExp();run()};
+
+// EN 206 Quadro 2: classificação XA a partir da análise química
+function classifyXA(){
+  const T=[["xa_so4w","SO₄²⁻ na água",v=>v<200?0:v<=600?1:v<=3000?2:v<=6000?3:4,"mg/l"],
+    ["xa_ph","pH da água",v=>v>6.5?0:v>=5.5?1:v>=4.5?2:v>=4?3:4,""],
+    ["xa_co2","CO₂ agressivo",v=>v<15?0:v<=40?1:v<=100?2:3,"mg/l"],
+    ["xa_nh4","NH₄⁺",v=>v<15?0:v<=30?1:v<=60?2:v<=100?3:4,"mg/l"],
+    ["xa_mg","Mg²⁺",v=>v<300?0:v<=1000?1:v<=3000?2:3,"mg/l"],
+    ["xa_so4s","SO₄²⁻ total no solo",v=>v<2000?0:v<=3000?1:v<=12000?2:v<=24000?3:4,"mg/kg"],
+    ["xa_ac","Acidez do solo",v=>v>200?1:0,"ml/kg"]];
+  const res=T.map(([id,l,f,u])=>{const v=num(id);return v==null?null:{l,v,k:f(v),u}}).filter(Boolean);
+  if(!res.length)return{html:`<span>Preencha os valores da análise química da água ou do solo.</span>`,cls:null};
+  const out=res.filter(r=>r.k===4);const mx=Math.max(...res.map(r=>Math.min(r.k,3)));
+  let k=mx;const nmax=res.filter(r=>Math.min(r.k,3)===mx).length;const up=mx>0&&mx<3&&nmax>=2;if(up)k++;
+  const lines=res.map(r=>line(`${r.l} = ${nf(r.v,r.v<20?1:0)} ${r.u} → ${r.k===0?"sem classe":r.k===4?"fora do quadro":"XA"+r.k}`,r.k>=3));
+  if(up)lines.push(line(`${nmax} características em XA${mx}: sobe para XA${k} (Quadro 2)`,1));
+  if(out.length)lines.push(line("Valores fora do Quadro 2: é necessário um estudo especial",1));
+  const cls=k?"XA"+k:null;
+  lines.push(cls?`<span><b>Classe: ${cls}</b> ${st.exp.has(cls)?"(aplicada)":`<button class="mini" data-xa="${cls}">aplicar</button>`}</span>`:"<span><b>Sem ataque químico</b> (abaixo de XA1)</span>");
+  return{html:lines.join(""),cls};
+}
+
+function solveRec(){
+  const m=mat(),fck=m.fck,life=+$("r_life").value,slab=$("r_slab").checked,qc=$("r_qc").checked;
+  const xa=classifyXA();$("xa_out").innerHTML=xa.html;
+  const order=Object.keys(F1);const sel=[...st.exp].sort((a,b)=>order.indexOf(a)-order.indexOf(b));
+  const per=sel.map(c=>{const r={c,f1:F1[c],...EXPD[c]};
+    if(COLI[c]!=null){let S=4;const mods=[];if(life===100){S+=2;mods.push("+2 vida útil")}if(fck>=THR[c]){S-=1;mods.push(`−1 ≥ ${CLS[THR[c]]}`)}if(slab){S-=1;mods.push("−1 laminar")}if(qc){S-=1;mods.push("−1 controlo")}
+      r.S=Math.min(6,Math.max(1,S));r.mods=mods;r.cdur=CMIN[r.S-1][COLI[c]];r.w=(c==="X0"||c==="XC1")?0.4:0.3}
+    return r});
+  const corr=per.filter(r=>r.cdur!=null),gov=[...corr].sort((a,b)=>b.cdur-a.cdur||b.S-a.S)[0]||null;
+  const dgam=num("r_dgam")??0,dst=num("r_dst")??0,dadd=num("r_dadd")??0,dev=num("r_dev")??10;
+  const dw=num("r_dw")??0,dl=num("r_dl")??16,agg=$("r_agg").checked?5:0,xm={"":0,XM1:5,XM2:10,XM3:15}[$("r_xm").value],rough=$("r_rough").checked?5:0;
+  const cast={f:0,p:40,s:75}[$("r_cast").value];
+  const cdur=gov?gov.cdur:0,cdurNet=cdur+dgam-dst-dadd;
+  const cminFor=phi=>Math.max(phi+agg,cdurNet,10)+xm+rough;
+  const cEst=dw>0?Math.max(cminFor(dw)+dev,cminFor(dl)+dev-dw,cast):null;   // à face do estribo
+  const cLong=Math.max(cminFor(dl)+dev,cast);                                 // sem estribos (lajes)
+  const req={wc:null,fck:0,cem:0,air:0,sulf:false,frost:false};
+  per.forEach(r=>{const[wc,f,cem,air,x]=r.f1;if(wc!=null)req.wc=req.wc==null?wc:Math.min(req.wc,wc);req.fck=Math.max(req.fck,f);if(cem)req.cem=Math.max(req.cem,cem);if(air)req.air=air;if(x==="sulf")req.sulf=true;if(x==="gelo")req.frost=true});
+  const wmax=corr.length?Math.min(...corr.map(r=>r.w)):null;
+  // REBAP art. 67.º (correspondência indicativa) e 78.º
+  const ambAuto=sel.some(c=>["XS2","XS3","XD2","XD3","XA2","XA3","XF4"].includes(c))?3:sel.some(c=>!["X0","XC1"].includes(c))?2:1;
+  const amb=$("r_amb").value==="auto"?ambAuto:+$("r_amb").value;
+  let cr=[20,30,40][amb-1];if(slab)cr-=5;if(fck>=40)cr-=10;else if(fck>=25)cr-=5;cr=Math.max(cr,15);
+  const crEst=dw>0?Math.max(cr,dw,dl-dw):Math.max(cr,dl);
+  const rec={per,corr,gov,cdur,cdurNet,dev,dw,dl,agg,xm,rough,cast,cminEst:dw>0?Math.max(cminFor(dw),cminFor(dl)-dw):cminFor(dl),
+    cEst,cLong,cnom:up5(cEst??cLong),cnomSlab:up5(cLong),req,wmax,amb,ambAuto,crEst,wReb:[0.3,0.2,0.1][amb-1],fck,life,xa};
+  return{R:rec,all:[],rank:[],any:true,best:corr.length?{id:"rec"}:null}
+}
+function tableRec(S){
+  const R=S.R;$("tbl").className="g";
+  $("thead").innerHTML=`<tr><th>Classe estrutural</th>${RCOLS.map(c=>`<th>${c}</th>`).join("")}</tr>`;
+  $("tbody").innerHTML=CMIN.map((row,i)=>`<tr><td>S${i+1}${i===3?' <span class="hint">· base 50 anos</span>':""}</td>${row.map((v,j)=>{
+    const hit=R.corr.filter(r=>r.S===i+1&&COLI[r.c]===j);const g=R.gov&&R.gov.S===i+1&&COLI[R.gov.c]===j;
+    return `<td class="${hit.length?"okc":""} ${g?"best":""} ro" title="${hit.map(r=>r.c).join(", ")}">${v}</td>`}).join("")}</tr>`).join("");
+  $("count").innerHTML=`EC2 Quadro 4.4N · c<sub>min,dur</sub> (mm) · a verde as classes escolhidas, com contorno a que condiciona`;
+}
+function cardRec(_,__,S){
+  const R=S.R;
+  if(!R.corr.length)return empty("Sem classe de corrosão",R.per.length?"As classes XF e XA definem a composição do betão, mas o recobrimento vem da classe de corrosão. Junte uma classe X0, XC, XD ou XS.":"Escolha as classes de exposição do elemento (uma por família).");
+  const g=R.gov,low=R.fck<R.req.fck;
+  const sub=`${R.per.map(r=>r.c).join(" + ")} · condiciona ${g.c} em S${g.S} · vida útil ${R.life} anos`;
+  const kv=[["c<sub>min,dur</sub>","mm",g.cdur,0],["c<sub>min,b</sub> (Ø"+(R.dw>0?R.dw:R.dl)+")","mm",(R.dw>0?R.dw:R.dl)+R.agg,0],["c<sub>min</sub>","mm",R.cminEst,0],["Δc<sub>dev</sub>","mm",R.dev,0],
+    ["c<sub>nom</sub> calculado","mm",R.cEst??R.cLong,0],["c<sub>nom</sub> adotado","mm",R.cnom,0]];
+  if(R.dw>0)kv.push(["Ao varão principal","mm",R.cnom+R.dw,0],["Sem estribos (lajes)","mm",R.cnomSlab,0]);
+  const kv2=[["Classe mínima","",null,0,CLS[R.req.fck]],["A/C máx.","",R.req.wc,2],["Cimento mín.","kg/m³",R.req.cem||null,0],["w<sub>max</sub>","mm",R.wmax,1]];
+  if(R.req.air)kv2.push(["Ar incorporado mín.","%",R.req.air,1]);
+  const kvh=a=>`<div class="kv">${a.map(([l,u,v,d,t])=>`<div><span>${l}${u?" ("+u+")":""}</span><b>${t??nf(v,d)}</b></div>`).join("")}</div>`;
+  const extra=[];
+  if(low)extra.push(`<p class="fnote bad">O betão escolhido em Materiais (${CLS[R.fck]||"C"+R.fck}) é inferior à classe mínima ${CLS[R.req.fck]} para ${R.per.filter(r=>r.f1[1]===R.req.fck).map(r=>r.c).join(", ")}. <button class="mini" data-setfck="${R.req.fck}">Usar ${CLS[R.req.fck]}</button></p>`);
+  if(R.req.sulf)extra.push(`<p class="fnote">XA2/XA3: usar cimento resistente aos sulfatos (EN 206 Quadro F.1).</p>`);
+  if(R.req.frost)extra.push(`<p class="fnote">Gelo/degelo: agregados conformes com a EN 12620 com resistência ao gelo/degelo.</p>`);
+  if(R.cast)extra.push(`<p class="fnote">Betonagem ${R.cast===40?"contra terreno preparado: c<sub>nom</sub> ≥ 40 mm":"diretamente contra o solo: c<sub>nom</sub> ≥ 75 mm"} (EC2 4.4.1.3(4)).</p>`);
+  const tbl=`<div class="reqt"><table><thead><tr><th>Classe</th><th>Ambiente</th><th>S</th><th>c<sub>min,dur</sub></th><th>A/C</th><th>Betão</th><th>Cimento</th><th>w<sub>max</sub></th></tr></thead><tbody>${R.per.map(r=>`<tr class="${g&&r.c===g.c?"gov":""}"><td>${r.c}</td><td title="${esc(r.e)}">${r.d}</td><td>${r.S?`S${r.S}<small>${r.mods.join(" ")||"base"}</small>`:"—"}</td><td>${r.cdur??"—"}</td><td>${r.f1[0]!=null?nf(r.f1[0],2):"—"}</td><td>${CLS[r.f1[1]]}</td><td>${r.f1[2]??"—"}</td><td>${r.w?nf(r.w,1):"—"}</td></tr>`).join("")}</tbody></table></div>`;
+  const ambN=["pouco agressivo","moderadamente agressivo","muito agressivo"][R.amb-1];
+  const reb=`<p class="lbl" style="margin:14px 0 6px">REBAP · ambiente ${ambN}${$("r_amb").value==="auto"?" (correspondência indicativa)":""}</p>${kvh([["Recobrimento mínimo","mm",R.crEst,0],["EC2 c<sub>min</sub>","mm",R.cminEst,0],["Fendas w","mm",R.wReb,1],["Combinação","",null,0,R.amb===3?"raras":"frequentes"]])}`;
+  return `<div class="sketch">${svgRec(R)}</div><div style="min-width:0"><span class="tag">Recobrimento nominal · EC2 4.4.1</span><div class="pname">c<sub>nom</sub> = ${R.cnom} mm</div><p class="psub">${sub}</p>${kvh(kv)}
+   <div class="row" style="margin-top:10px"><button class="btn" data-applyc="1">Aplicar aos separadores de armaduras</button><span class="hint" id="applied"></span></div>
+   <p class="lbl" style="margin:16px 0 6px">Composição do betão · EN 206 Quadro F.1 e EC2 Quadro 7.1N</p>${kvh(kv2)}${extra.join("")}${tbl}${reb}</div>`;
+}
+function svgRec(R){
+  const dw=R.dw||0,dl=R.dl||16,c=R.cnom,ext=c+dw+dl+40,k=165/ext,o=24,X=v=>o+v*k,Y=v=>200-o-v*k;
+  let g=`<rect x="${o}" y="0" width="${200-o}" height="${200-o}" fill="var(--conc)"/><line x1="${o}" y1="0" x2="${o}" y2="${200-o}" stroke="var(--ink)" stroke-width="1.2"/><line x1="${o}" y1="${200-o}" x2="200" y2="${200-o}" stroke="var(--ink)" stroke-width="1.2"/>`;
+  if(dw>0){const a=c+dw/2;g+=`<path d="M${X(a)} 0 V${Y(a)} H200" fill="none" stroke="var(--steel)" stroke-width="${Math.max(1.5,dw*k)}" stroke-linejoin="round"/>`}
+  const bc=c+dw+dl/2;g+=`<circle cx="${X(bc)}" cy="${Y(bc)}" r="${dl/2*k}" fill="var(--oxide)"/>`;
+  const xm=X(c+dw+dl+18);
+  g+=`<g stroke="var(--muted)" stroke-width=".8" fill="var(--muted)" font-family="IBM Plex Mono,monospace" font-size="10">
+   <line x1="${xm}" y1="${200-o}" x2="${xm}" y2="${Y(c)}"/><line x1="${xm-4}" y1="${Y(c)}" x2="${xm+4}" y2="${Y(c)}"/><text x="${xm+6}" y="${(Y(c)+200-o)/2+3}" stroke="none">${c}</text>
+   <line x1="${o}" y1="${Y(c+dw+dl+30)}" x2="${X(c)}" y2="${Y(c+dw+dl+30)}"/><line x1="${X(c)}" y1="${Y(c+dw+dl+30)-4}" x2="${X(c)}" y2="${Y(c+dw+dl+30)+4}"/><text x="${(o+X(c))/2}" y="${Y(c+dw+dl+30)-5}" text-anchor="middle" stroke="none">${c}</text></g>
+   <text x="${o+3}" y="${200-o+14}" font-size="9.5" fill="var(--muted)" font-family="IBM Plex Mono,monospace">${dw>0?`estribo Ø${dw} · varão Ø${dl}`:`varão Ø${dl}`}</text>`;
+  return `<svg viewBox="0 0 200 200" role="img" aria-label="Canto da secção com recobrimento de ${c} mm">${g}</svg>`}
+
+// ================= AMARRAÇÃO E EMENDAS (EC2 8.4 / 8.7 e REBAP 80.º–84.º) =================
+function amarOpts(){return{good:$("a_bond").value==="g",comp:$("a_load").value==="c",shape:$("a_shape").value,ratio:Math.min(1,Math.max(0.05,num("a_ratio")??1)),
+  c:num("a_c")??30,a:num("a_a")??50,K:+$("a_K").value,ast:num("a_ast"),el:$("a_el").value,p:num("a_p"),useA2:$("a_a2").checked,pct:+$("a_pct").value,far:$("a_far").checked}}
+function anchorEC2(phi,o){
+  const m=mat(),fckb=Math.min(m.fck,60),fctm=0.3*Math.pow(fckb,2/3),fctd=0.7*fctm/1.5;
+  const e1=o.good?1:0.7,e2=phi>32?(132-phi)/100:1,fbd=2.25*e1*e2*fctd,ssd=m.fyd*o.ratio,lbrqd=phi/4*ssd/fbd,As=AB(phi);
+  let a1=1,a2=1,a3=1,a4=1,a5=1,a3l=1;const cd=Math.min(o.a/2,o.c);
+  if(!o.comp){
+    if(o.shape==="b"&&cd>3*phi)a1=0.7;
+    if(o.useA2)a2=o.shape==="b"?clamp(1-0.15*(cd-3*phi)/phi):clamp(1-0.15*(cd-phi)/phi);
+    if(o.ast!=null){a3=clamp(1-o.K*(o.ast-(o.el==="v"?0.25*As:0))/As);a3l=clamp(1-o.K*(o.ast-As*o.ratio)/As)}
+    if(o.p)a5=clamp(1-0.04*o.p);
+  }
+  if(o.shape==="w")a4=0.7;
+  const prod=Math.max(0.7,a2*a3*a5),prodl=Math.max(0.7,a2*a3l*a5);
+  const lbmin=o.comp?Math.max(0.6*lbrqd,10*phi,100):Math.max(0.3*lbrqd,10*phi,100);
+  const lbd=Math.max(a1*a4*prod*lbrqd,lbmin);
+  const a6={20:1,25:1,33:1.15,50:1.4,100:1.5}[o.pct];
+  const l0min=Math.max(0.3*a6*lbrqd,15*phi,200),l0=Math.max(a1*prodl*a6*lbrqd,l0min);
+  return{phi,fctm,fctd,fbd,e1,e2,ssd,lbrqd,a1,a2,a3,a4,a5,a3l,prod,cd,lbmin,lbd,a6,l0min,l0,mand:phi<=16?4*phi:7*phi}}
+function anchorREBAP(phi,o){
+  const m=mat(),T=[[12,"B15",1.8],[16,"B20",2.1],[20,"B25",2.4],[25,"B30",2.7],[30,"B35",3.0],[35,"B40",3.3],[40,"B45",3.6],[45,"B50",3.9],[50,"B55",4.2]];
+  let row=T[0];T.forEach(t=>{if(m.fck>=t[0])row=t});
+  const fbd=row[2]*(o.good?1:0.7),lb=phi/4*m.fyd/fbd,a1=(!o.comp&&o.shape==="b")?0.7:1;
+  const lbnet=Math.max(a1*lb*o.ratio,10*phi,100,(o.comp?0.6:0.3)*lb);
+  const ci={20:0,25:1,33:2,50:3,100:4}[o.pct],a2=(o.far?[1,1.1,1.2,1.3,1.4]:[1.2,1.4,1.6,1.8,2.0])[ci];
+  const lb0=o.comp?lb:Math.max(a2*lbnet,15*phi,200);
+  const lim=o.comp?100:phi<16?100:50;
+  return{B:row[1],fbd,lb,a1,lbnet,a2,lb0,lim}}
+function drawAD(){$("c_ad").innerHTML="";DIAMS.concat([]).forEach(d=>{const b=document.createElement("button");b.className="chip";b.textContent="Ø"+d;b.setAttribute("aria-pressed",st.aphi===d);
+  b.onclick=()=>{st.aphi=d;drawAD();run()};$("c_ad").appendChild(b)})}
+function solveAmar(){
+  const o=amarOpts();const rows=DIAMS.map(d=>({id:"a|"+d,d,ec:anchorEC2(d,o),rb:anchorREBAP(d,o)}));
+  const E=anchorEC2(st.aphi,o);
+  $("a_out").innerHTML=[line(`c<sub>d</sub> = min(a/2; c) = ${nf(E.cd,0)} mm`),line(`α<sub>1</sub> = ${nf(E.a1,2)} · α<sub>2</sub> = ${nf(E.a2,2)} · α<sub>3</sub> = ${nf(E.a3,2)} · α<sub>4</sub> = ${nf(E.a4,2)} · α<sub>5</sub> = ${nf(E.a5,2)}`),line(`α<sub>2</sub>·α<sub>3</sub>·α<sub>5</sub> = ${nf(E.prod,2)}${E.a2*E.a3*E.a5<0.7?" (mínimo 0,7)":""} · α<sub>6</sub> = ${nf(E.a6,2)}`)].join("");
+  return{R:{o},all:rows,rank:[],any:true,best:rows.find(r=>r.d===st.aphi)||rows[0]}}
+function tableAmar(S,best){
+  $("tbl").className="l";
+  $("thead").innerHTML=`<tr><th>Ø<small>mm</small></th><th>f<sub>bd</sub><small>MPa</small></th><th>l<sub>b,rqd</sub><small>mm</small></th><th>l<sub>bd</sub><small>mm</small></th><th>l<sub>bd</sub><small>em Ø</small></th><th>l<sub>0</sub><small>mm</small></th><th>l<sub>0</sub><small>em Ø</small></th><th>REBAP l<sub>b,net</sub><small>mm</small></th><th>REBAP l<sub>b,0</sub><small>mm</small></th></tr>`;
+  $("tbody").innerHTML=S.all.map(r=>{const e=r.ec,b=r.rb;return `<tr class="${best&&r.id===best.id?"best":""}" data-id="${r.id}" tabindex="0"><td>Ø${r.d}</td><td>${nf(e.fbd,2)}</td><td>${nf(e.lbrqd,0)}</td><td>${up10(e.lbd)}</td><td>${Math.ceil(e.lbd/r.d-1e-9)}Ø</td><td>${up10(e.l0)}</td><td>${Math.ceil(e.l0/r.d-1e-9)}Ø</td><td class="c">${up10(b.lbnet)}</td><td class="c">${up10(b.lb0)}</td></tr>`}).join("");
+  const o=S.R.o;$("count").innerHTML=`Comprimentos de cálculo arredondados aos 10 mm · ${o.comp?"compressão":"tração"}, ${o.good?"boa aderência":"outras condições"}, ${{s:"reta",b:"curva",w:"com varão soldado"}[o.shape]}, ${o.pct===100?"100":o.pct} % emendados · <b>clique numa linha</b> para ver o detalhe`;
+}
+function cardAmar(r,_,S){
+  const o=S.R.o,e=r.ec,b=r.rb,phi=r.d;
+  const shapeN={s:"reta",b:"gancho, cotovelo ou laço",w:"reta com varão soldado"}[o.shape];
+  const kvh=a=>`<div class="kv">${a.map(([l,u,v,d,t])=>`<div><span>${l}${u?" ("+u+")":""}</span><b>${t??nf(v,d)}</b></div>`).join("")}</div>`;
+  const notes=[];
+  if(o.comp&&o.shape==="b")notes.push(`<p class="fnote">Ganchos e cotovelos não contribuem para amarrações em compressão (EC2 8.4.1(3)); considerado α<sub>1</sub> = 1.</p>`);
+  if(!o.comp&&phi>=20)notes.push(`<p class="fnote">Ø ≥ 20 mm: na zona da emenda é necessária armadura transversal ΣA<sub>st</sub> ≥ ${nf(AB(phi),2)} cm² (área de um varão emendado), nos terços extremos da emenda (EC2 8.7.4.1).</p>`);
+  if(!o.comp&&o.pct>b.lim)notes.push(`<p class="fnote bad">REBAP 84.2 c): com varões de alta aderência de Ø ≥ 16 mm não se pode emendar mais de metade da secção na mesma secção.</p>`);
+  if(phi>32)notes.push(`<p class="fnote">Ø &gt; 32 mm: η<sub>2</sub> = ${nf(e.e2,2)} e regras adicionais do EC2 8.8 (varões de grande diâmetro).</p>`);
+  const sub=`Ø${phi} · ${o.comp?"compressão":"tração"} · ${o.good?"boa aderência":"outras condições de aderência"} · ${shapeN}`;
+  return `<div class="sketch">${svgAmar(e,o)}</div><div style="min-width:0"><span class="tag">Amarração · EC2 8.4.4</span>
+   <div class="pname">l<sub>bd</sub> = ${up10(e.lbd)} mm</div><p class="psub">${sub}</p>
+   <div class="site"><div><span>Amarração em obra</span><b>${up10(e.lbd)} mm</b><em>${Math.ceil(e.lbd/phi-1e-9)}Ø</em></div><div><span>Emenda por sobreposição</span><b>${up10(e.l0)} mm</b><em>${Math.ceil(e.l0/phi-1e-9)}Ø · ${o.pct} % emendados</em></div></div>
+   ${notes.join("")}
+   ${kvh([["f<sub>ctd</sub>","MPa",e.fctd,2],["f<sub>bd</sub>","MPa",e.fbd,2],["σ<sub>sd</sub>","MPa",e.ssd,0],["l<sub>b,rqd</sub>","mm",e.lbrqd,0],["α<sub>1</sub>·α<sub>4</sub>","",e.a1*e.a4,2],["α<sub>2</sub>·α<sub>3</sub>·α<sub>5</sub>","",e.prod,2],["l<sub>b,min</sub>","mm",e.lbmin,0],["l<sub>bd</sub>","mm",e.lbd,0],["α<sub>6</sub>","",e.a6,2],["l<sub>0,min</sub>","mm",e.l0min,0],["l<sub>0</sub>","mm",e.l0,0],["Ø mandril mín.","mm",e.mand,0]])}
+   <p class="lbl" style="margin:14px 0 6px">REBAP · betão ${b.B}, varões de alta aderência</p>
+   ${kvh([["f<sub>bd</sub> (Quadro XI)","MPa",b.fbd,2],["l<sub>b</sub>","mm",b.lb,0],["l<sub>b,net</sub>","mm",up10(b.lbnet),0],["α<sub>2</sub> (Quadro XII)","",o.comp?null:b.a2,1,o.comp?"—":null],["l<sub>b,0</sub>","mm",up10(b.lb0),0],["Dif. l<sub>bd</sub> EC2/REBAP","%",100*(e.lbd/b.lbnet-1),0]])}</div>`;
+}
+function svgAmar(e,o){
+  const L=Math.max(e.lbd,e.l0),k=150/L,x0=30,phi=e.phi,t=Math.max(2,Math.min(7,phi*0.28));
+  const lb=e.lbd*k,l0=e.l0*k,y1=62,y2=150;
+  let g=`<rect x="0" y="${y1-30}" width="${x0}" height="60" fill="var(--conc)"/><line x1="${x0}" y1="${y1-30}" x2="${x0}" y2="${y1+30}" stroke="var(--ink)" stroke-dasharray="3 3"/>`;
+  // amarração: varão a entrar no apoio (da direita para a esquerda)
+  const xe=x0+lb;
+  g+=`<rect x="${x0}" y="${y1-24}" width="${lb}" height="48" fill="var(--conc)" opacity=".55"/>`;
+  g+=`<path d="M200 ${y1} H${x0+4}${o.shape==="b"?` q-8 0 -8 8 v14`:""}" fill="none" stroke="var(--oxide)" stroke-width="${t}" stroke-linecap="round"/>`;
+  if(o.shape==="w")g+=`<circle cx="${x0+10}" cy="${y1+t}" r="${t*0.8}" fill="var(--steel)"/>`;
+  // emenda: dois varões sobrepostos
+  const xs=(200-l0)/2;
+  g+=`<line x1="4" y1="${y2-t*0.6}" x2="${xs+l0}" y2="${y2-t*0.6}" stroke="var(--oxide)" stroke-width="${t}" stroke-linecap="round"/><line x1="${xs}" y1="${y2+t*0.6}" x2="196" y2="${y2+t*0.6}" stroke="var(--steel)" stroke-width="${t}" stroke-linecap="round"/>`;
+  g+=`<g stroke="var(--muted)" stroke-width=".8" fill="var(--muted)" font-family="IBM Plex Mono,monospace" font-size="10">
+   <line x1="${x0}" y1="${y1+34}" x2="${x0+lb}" y2="${y1+34}"/><line x1="${x0}" y1="${y1+30}" x2="${x0}" y2="${y1+38}"/><line x1="${x0+lb}" y1="${y1+30}" x2="${x0+lb}" y2="${y1+38}"/><text x="${x0+lb/2}" y="${y1+48}" text-anchor="middle" stroke="none">l_bd ${up10(e.lbd)}</text>
+   <line x1="${xs}" y1="${y2+16}" x2="${xs+l0}" y2="${y2+16}"/><line x1="${xs}" y1="${y2+12}" x2="${xs}" y2="${y2+20}"/><line x1="${xs+l0}" y1="${y2+12}" x2="${xs+l0}" y2="${y2+20}"/><text x="100" y="${y2+30}" text-anchor="middle" stroke="none">l_0 ${up10(e.l0)}</text></g>
+   <text x="2" y="${y1-36}" font-size="9.5" fill="var(--muted)" font-family="IBM Plex Mono,monospace">apoio</text>`;
+  return `<svg viewBox="0 0 200 200" role="img" aria-label="Amarração de ${up10(e.lbd)} mm e emenda de ${up10(e.l0)} mm">${g}</svg>`}
+// ligação a partir dos separadores de armaduras
+function ankKV(phi){const e=anchorEC2(phi,amarOpts());return[[`l<sub>bd</sub> Ø${phi}`,"mm",up10(e.lbd),0],[`l<sub>0</sub> Ø${phi}`,"mm",up10(e.l0),0]]}
+const ankBtn=phi=>`<p class="fnote"><button class="mini" data-goamar="${phi}">Amarração e emendas do Ø${phi} →</button></p>`;
+
+// ---------- cartão e desenho comuns ----------
+function empty(tag,txt){return `<div class="sketch"><svg viewBox="0 0 200 200"><rect x="40" y="40" width="120" height="120" fill="none" stroke="var(--line)" stroke-dasharray="6 5"/></svg></div><div><span class="tag none">${tag}</span><div class="pname">—</div><p class="psub">${txt}</p></div>`}
+function card({svg,p,best,name,sub,util,kv,alts,altTxt,notes="",calcKeys=[]}){
+  const key=p.uid??p.id,isBest=best&&(best.uid??best.id)===key;
+  const tags={viga:"Menor área que cumpre",laje:"Menor área que cumpre",est:"Menor área que cumpre",malha:"Mais leve que cumpre"};
+  const crit={viga:{n:"Menos varões que cumpre"},laje:{s:"Maior afastamento que cumpre"},est:{s:"Maior espaçamento que cumpre"},malha:{u:"Maior aproveitamento"}};
+  const cv=$({viga:"v_crit",laje:"l_crit",est:"e_crit",malha:"m_crit"}[st.mode]).value;
+  const tag=st.pick!=null&&!isBest?`<span class="tag sel">Selecionado na tabela</span>`:last.q&&!last.any?`<span class="tag">Resultado da pesquisa</span>`:`<span class="tag">${crit[st.mode][cv]||tags[st.mode]}</span>`;
+  const okP=p.c?p.c.ok:p.ok;
+  const u=util.length?`<div class="util">${util.map(([l,x,t])=>`<div class="u"><span>${l} <small>${t}</small></span><div class="bar"><i class="${x>1+1e-9?"over":x>.9?"hi":""}" style="width:${Math.min(100,x*100)}%"></i></div><em>${isFinite(x)?nf(x*100,0)+"%":"n.d."}</em></div>`).join("")}</div>`:"";
+  const others=alts.filter(a=>(a.uid??a.id)!==key).slice(0,5);
+  const al=last.any&&others.length?`<div class="alts">Alternativas: ${others.map(a=>`<button data-id="${a.uid??a.id}">${altTxt(a)}</button>`).join("")}</div>`:"";
+  return `<div class="sketch">${svg}</div><div style="min-width:0">${tag}${!okP&&last.any?' <span class="tag none">Não cumpre</span>':""}${p.warn?' <span class="tag none">Dados a rever</span>':""}<div class="pname">${esc(name)}</div><p class="psub">${sub}</p>${notes}${u}<div class="kv">${kv.map(([l,un,v,d,ck])=>`<div><span>${l}${un?" ("+un+")":""}</span><b class="${ck&&calcKeys.includes(ck)?"c":""}">${nf(v,d)}</b></div>`).join("")}</div>${al}</div>`}
+function dims(x,y,w,h,b,H){return `<g stroke="var(--muted)" stroke-width=".8" fill="var(--muted)" font-family="IBM Plex Mono,monospace" font-size="10">
+  <line x1="${x}" y1="${y+h+10}" x2="${x+w}" y2="${y+h+10}"/><text x="${x+w/2}" y="${y+h+22}" text-anchor="middle" stroke="none">${nf(b,0)}</text>
+  <line x1="${x-10}" y1="${y}" x2="${x-10}" y2="${y+h}"/><text x="${x-14}" y="${y+h/2}" text-anchor="middle" stroke="none" transform="rotate(-90 ${x-14} ${y+h/2})">${nf(H,0)}</text></g>`}
+
+// ---------- ciclo ----------
+let last={};
+const SOLVE={viga:solveViga,laje:solveLaje,est:solveEst,malha:solveMalha},TABLE={viga:tableViga,laje:tableLaje,est:tableEst,malha:tableMalha},CARD={viga:cardViga,laje:cardLaje,est:cardEst,malha:cardMalha};
+Object.assign(SOLVE,{rec:solveRec,amar:solveAmar});Object.assign(TABLE,{rec:tableRec,amar:tableAmar});Object.assign(CARD,{rec:cardRec,amar:cardAmar});
+const NOTE={
+ viga:"Áreas A<sub>s</sub> = n·π·Ø²/4. A disposição verifica a distância livre mínima entre varões max(Ø; d<sub>g</sub> + 5 mm; 20 mm) (EC2 8.2) na largura b − 2c<sub>nom</sub> − 2Ø<sub>estribo</sub>; os varões maiores ficam nos cantos e o excedente passa à 2ª camada. As combinações juntam dois diâmetros até dois tamanhos de diferença. O pré-dimensionamento usa o diagrama rectangular simplificado (λ = 0,8, η = 1), γ<sub>c</sub> = 1,5 e γ<sub>s</sub> = 1,15; com d em branco, d = h − c<sub>nom</sub> − Ø<sub>estribo</sub> − 10 mm (varão Ø20).",
+ laje:"Áreas por metro de largura A<sub>s</sub> = π·Ø²/4 · 1000/s, como na tabela de armadura longitudinal de lajes e sapatas. O afastamento máximo segue o EC2 9.3.1.1(3) conforme a direção e a zona, e é exigida uma distância livre mínima de 20 mm. Com d em branco, d = h − c<sub>nom</sub> − 6 mm. O peso indicado é o de uma só direção.",
+ est:"A<sub>sw</sub>/s = n<sub>ramos</sub>·π·Ø²/4 · 1000/s, como na tabela de armadura transversal. 3 ramos: estribo fechado com gancho intermédio; 4 ramos: dois estribos sobrepostos. O pré-dimensionamento segue o EC2 6.2.3 com estribos verticais (α = 90°), z = 0,9d e α<sub>cw</sub> = 1; s<sub>l,máx</sub> = 0,75d (9.2.2(6)) e ρ<sub>w,min</sub> = 0,08√f<sub>ck</sub>/f<sub>yk</sub> (9.2.2(5)). O afastamento transversal dos ramos não deve exceder min(0,75d; 600 mm).",
+ rec:"c<sub>min,dur</sub> do Quadro 4.4N do EC2 com a classe estrutural S4 de base (50 anos) e as modificações do Quadro 4.3N; a redução por classe de resistência usa o betão escolhido em Materiais. c<sub>min</sub> = max(c<sub>min,b</sub>; c<sub>min,dur</sub> + Δc<sub>dur,γ</sub> − Δc<sub>dur,st</sub> − Δc<sub>dur,add</sub>; 10 mm) (4.2), com c<sub>min,b</sub> = Ø (+5 mm se D<sub>máx</sub> &gt; 32 mm), mais 5/10/15 mm para abrasão XM1/XM2/XM3 e 5 mm para superfícies irregulares; c<sub>nom</sub> = c<sub>min</sub> + Δc<sub>dev</sub> (4.1), arredondado aos 5 mm e medido à armadura mais exterior (estribo). O varão principal tem também de cumprir o seu c<sub>min,b</sub>. Valores recomendados do EC2, sem Anexo Nacional. Composição do betão pelo Quadro F.1 da NP EN 206-1 (informativo: vida útil de 50 anos, CEM I, D 20–32 mm; em Portugal substituído pela especificação LNEC E 464) e w<sub>max</sub> do Quadro 7.1N (combinação quase permanente). Em instalações de fertilizantes e efluentes agroindustriais, o amónio e os sulfatos costumam condicionar a classe XA: use o classificador. REBAP: recobrimento mínimo do art. 78.º (sem margem de execução) e fendilhação do Quadro VIII; a correspondência automática entre classes de exposição e ambientes do art. 67.º é indicativa.",
+ amar:"EC2: f<sub>bd</sub> = 2,25·η<sub>1</sub>·η<sub>2</sub>·f<sub>ctd</sub>, com f<sub>ctd</sub> = 0,7·f<sub>ctm</sub>/1,5 (α<sub>ct</sub> = 1, limitado a C60/75) (8.2); l<sub>b,rqd</sub> = (Ø/4)·σ<sub>sd</sub>/f<sub>bd</sub>, com σ<sub>sd</sub> = f<sub>yd</sub>·A<sub>s,req</sub>/A<sub>s,prov</sub> (8.3); l<sub>bd</sub> = α<sub>1</sub>α<sub>2</sub>α<sub>3</sub>α<sub>4</sub>α<sub>5</sub>·l<sub>b,rqd</sub> ≥ l<sub>b,min</sub>, com α<sub>2</sub>α<sub>3</sub>α<sub>5</sub> ≥ 0,7 (8.4); l<sub>0</sub> = α<sub>1</sub>α<sub>2</sub>α<sub>3</sub>α<sub>5</sub>α<sub>6</sub>·l<sub>b,rqd</sub> ≥ max(0,3α<sub>6</sub>l<sub>b,rqd</sub>; 15Ø; 200 mm) (8.10–8.11), com ΣA<sub>st,min</sub> = A<sub>s</sub>·σ<sub>sd</sub>/f<sub>yd</sub> no α<sub>3</sub> da emenda. c<sub>d</sub> = min(a/2; c<sub>1</sub>; c) com c<sub>1</sub> = c (Fig. 8.3). Se a distância livre entre varões emendados exceder 4Ø ou 50 mm, l<sub>0</sub> aumenta desse excesso; emendas adjacentes afastadas ≥ 0,3l<sub>0</sub> (8.7.2). REBAP: f<sub>bd</sub> do Quadro XI para varões de alta aderência (×0,7 noutras condições), l<sub>b</sub> = (Ø/4)·f<sub>syd</sub>/f<sub>bd</sub>, l<sub>b,net</sub> = α<sub>1</sub>·l<sub>b</sub>·A<sub>s,cal</sub>/A<sub>s,ef</sub> ≥ max(10Ø; 100 mm; 0,3l<sub>b</sub>) (81.4) e l<sub>b,0</sub> = α<sub>2</sub>·l<sub>b,net</sub> ≥ max(15Ø; 200 mm) (84.2); em compressão l<sub>b,0</sub> = l<sub>b</sub>. Classe B tomada pelo f<sub>ck</sub> (B25 ≈ C20/25, B30 ≈ C25/30, B35 ≈ C30/37). Os valores da tabela usam as condições escolhidas à esquerda para todos os diâmetros.",
+ malha:"Catálogos de referência: tabela geral de rede electrossoldada (AR, AQ, CQ, DQ, AC), Nordesfer (lisa e nervurada), Major 2023 (FCQ, FAQ, FAR lisas; FNQ, FND, FNR nervuradas; transcrita do PDF digitalizado, com a FND 40 corrigida para Ø4//150) e Tabelas MSL (A500 EL lisa e A500 ER nervurada). Catálogos digitalizados não têm texto e não podem ser importados; peça ao fornecedor a versão digital ou introduza-os como referência. Direção longitudinal = varões A, de menor afastamento e maior área. O afastamento máximo automático segue o EC2 9.3.1.1(3) para zona corrente (3h ≤ 400 mm e 3,5h ≤ 450 mm). Malhas assinaladas “rever” têm área ou peso no catálogo que não batem com Ø e afastamento (ex.: MCQ 40, que indica 0,94 cm²/m para Ø4//150, quando o valor correto é 0,84). Painel standard 6,00 × 2,40 m. Confirme sempre a referência final na tabela do fornecedor."};
+function run(){const S=SOLVE[st.mode]();let best=S.best!==undefined?S.best:(S.any?S.rank[0]||null:null);last={...S,best,scroll:last.scroll};render()}
+function render(){const S=last,find=id=>S.all.find(c=>(c.uid??c.id)===id);
+  const pick=st.pick!=null?find(st.pick)||null:null,show=pick||S.best;
+  TABLE[st.mode](S,S.best,pick);$("result").innerHTML=CARD[st.mode](show,S.best,S);$("note").innerHTML=NOTE[st.mode];
+  $("result").querySelectorAll(".alts button").forEach(b=>b.onclick=()=>{st.pick=b.dataset.id;render()});
+  const act=id=>{if(st.mode==="amar"){st.aphi=+id.split("|")[1];drawAD();run()}else{st.pick=id;render()}};
+  document.querySelectorAll("#tbody [data-id]").forEach(el=>{el.onclick=()=>act(el.dataset.id);el.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();act(el.dataset.id)}}});
+  document.querySelectorAll("[data-goamar]").forEach(b=>b.onclick=()=>{st.aphi=+b.dataset.goamar;drawAD();setMode("amar");try{window.scrollTo({top:0,behavior:"smooth"})}catch(e){}});
+  document.querySelectorAll("[data-setfck]").forEach(b=>b.onclick=()=>{$("fck").value=b.dataset.setfck;run()});
+  document.querySelectorAll("[data-applyc]").forEach(b=>b.onclick=()=>{const R=last.R;["v_c","e_c"].forEach(id=>$(id).value=R.cnom);["l_c","m_c"].forEach(id=>$(id).value=R.cnomSlab);if(R.dw>0)$("v_dw").value=R.dw;$("applied").textContent=`Vigas e estribos: ${R.cnom} mm · lajes e malhas: ${R.cnomSlab} mm`});
+  const mk=document.querySelector("#tbl .best,#tbl .pick"),id=show&&(show.uid??show.id);
+  if(mk&&last.scroll!==id){const tw=document.querySelector(".tw");tw.scrollTop=Math.max(0,mk.offsetTop-tw.clientHeight/2);last.scroll=id}}
+
+// ---------- guardar no navegador ----------
+function save(){try{localStorage.setItem("seletor-armaduras-v1",JSON.stringify({mode:st.mode,off:[...st.off],refs:st.sources.filter(s=>s.ref).map(s=>s.id),known:REF.map(s=>s.id),imp:st.sources.filter(s=>!s.ref).map(({id,name,pages,meshes})=>({id,name,pages,meshes:meshes.map(({uid,src,key,c,...m})=>m)}))}))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem("seletor-armaduras-v1")||"null");if(!d)return false;
+  st.sources=[...REF.filter(s=>!d.refs||d.refs.includes(s.id)||!(d.known||[]).includes(s.id)),...(d.imp||[])];st.off=new Set(d.off||[]);if(d.mode&&SOLVE[d.mode])st.mode=d.mode;return true}catch(e){return false}}
+
+const IDS=["fck","fyk","acc","v_med","v_b","v_h","v_d","v_c","v_dw","v_min","v_as","v_dg","v_lay","v_nmin","v_crit","v_mix","l_med","l_h","l_c","l_d","l_dir","l_zone","l_min","l_as","l_smax","l_smin","l_crit","e_ved","e_cot","e_b","e_h","e_c","e_d","e_min","e_as","e_smax","e_smin","e_crit","m_q","m_med","m_h","m_c","m_d","m_min","m_20","m_asl","m_ast","m_smax","m_stmax","m_wmax","m_crit","xa_so4w","xa_ph","xa_co2","xa_nh4","xa_mg","xa_so4s","xa_ac","r_life","r_dev","r_slab","r_qc","r_dw","r_dl","r_xm","r_cast","r_dgam","r_dst","r_dadd","r_agg","r_rough","r_amb","a_bond","a_load","a_shape","a_ratio","a_pct","a_c","a_a","a_K","a_ast","a_el","a_p","a_a2","a_far"];
+IDS.forEach(id=>$(id).addEventListener("input",()=>{st.pick=null;$("exNote").hidden=true;run()}));
+$("onlyOk").onchange=render;
+$("reset").onclick=()=>{const L={viga:["v_med","v_as","v_d"],laje:["l_med","l_as","l_d","l_smax"],est:["e_ved","e_as","e_d","e_smax"],malha:["m_q","m_med","m_asl","m_ast","m_d","m_smax","m_stmax","m_wmax"],rec:["xa_so4w","xa_ph","xa_co2","xa_nh4","xa_mg","xa_so4s","xa_ac"],amar:["a_ast","a_p"]}[st.mode];if(st.mode==="rec"){st.exp.clear();drawExp()}L.forEach(id=>$(id).value="");st.pick=null;$("exNote").hidden=true;run()};
+// exemplo de partida
+$("v_med").value="120";$("l_med").value="25";$("e_ved").value="150";$("m_med").value="12";
+if(!load())st.sources=[...REF];
+rebuildMesh();chips();drawExp();drawAD();
+if(!pdfReady)setMsg("O leitor de PDF não carregou; os catálogos de referência continuam disponíveis.",true);
+setMode(st.mode);
+</script>
+
+</body></html>
