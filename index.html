@@ -1190,4 +1190,53 @@ if(!pdfReady)setMsg("O leitor de PDF não carregou; os catálogos de referência
 setMode(st.mode);
 </script>
 
+<!-- ===== Ponte CYPECAD (v1): recebe a área ou o esforço do Leitor CYPECAD ===== -->
+<script>
+(function(){
+'use strict';
+window.__cypeBridge='sel';
+try{ if(!window.name) window.name='cy-sel'; }catch(e){}
+var done={}, MODES=['viga','laje','est','malha','rec','amar'];
+function fill(vals){
+  var n=0;
+  Object.keys(vals).forEach(function(id){
+    var v=vals[id], el=document.getElementById(id); if(!el||v==null) return;
+    if(el.tagName==='SELECT'){
+      var s=String(v), o=[].find.call(el.options,function(o){ return o.value===s||parseFloat(o.value)===parseFloat(s); });
+      if(!o) return; el.value=o.value;
+    } else if(el.type==='checkbox') el.checked=!!v;
+    else el.value=String(v).replace('.',',');
+    n++;
+  });
+  return n;
+}
+function banner(t){
+  var b=document.getElementById('cypeBanner');
+  if(!b){ b=document.createElement('div'); b.id='cypeBanner'; b.setAttribute('role','status');
+    b.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:60;background:#1d2326;color:#fff;padding:8px 14px;border-radius:6px;font:600 .85rem system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:92vw';
+    document.body.appendChild(b); }
+  b.textContent=t; b.hidden=false; clearTimeout(banner.t); banner.t=setTimeout(function(){ b.hidden=true; },6000);
+}
+window.addEventListener('message',function(e){
+  var d=e.data;
+  if(!d||d.type!=='cype-fill'||!d.id||!d.values||typeof d.values!=='object') return;
+  try{ e.source.postMessage({type:'cype-ack',id:d.id,label:d.label},'*'); }catch(x){}
+  if(done[d.id]) return; done[d.id]=1;
+  try{ if(MODES.indexOf(d.target)>=0) setMode(d.target); }catch(x){}
+  var n=fill(d.values);
+  try{ st.pick=null; run(); }catch(x){ console.error(x); }
+  banner('CYPECAD → '+(d.label||d.target)+' · '+n+' campos preenchidos');
+  try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(x){}
+});
+var h=document.querySelector('header.top');
+if(h){
+  var b=document.createElement('button'); b.type='button'; b.id='cypeBtn';
+  b.textContent='Ler listagens CYPECAD ↗';
+  b.title='Abrir o Leitor CYPECAD (abre o Leitor CYPECAD)';
+  b.style.cssText='margin-top:8px';
+  b.onclick=function(){ window.open('https://yyassiradamo17-boop.github.io/leitor-cypecad/','cy-leitor'); };
+  h.appendChild(b);
+}
+})();
+</script>
 </body></html>
